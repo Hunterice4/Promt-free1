@@ -13,6 +13,7 @@ export const MovieSetMode: React.FC = () => {
   const [videoPrompt, setVideoPrompt] = useState<string | null>(null);
   const [autoGenerateImage, setAutoGenerateImage] = useState(true);
   const [hasPaidKey, setHasPaidKey] = useState<boolean | null>(null);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   React.useEffect(() => {
     const checkKey = async () => {
@@ -52,7 +53,7 @@ export const MovieSetMode: React.FC = () => {
       }
       
       // Get a detailed prompt for the image
-      const prompts = await generateMovieSetPrompt(concept, true);
+      const prompts = await generateMovieSetPrompt(concept, true, selectedImage || undefined);
       const parsed = JSON.parse(prompts);
       setImagePrompt(parsed.image_prompt);
       setVideoPrompt(parsed.video_prompt);
@@ -74,6 +75,17 @@ export const MovieSetMode: React.FC = () => {
     link.href = url;
     link.download = name;
     link.click();
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setSelectedImage(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   return (
@@ -113,6 +125,47 @@ export const MovieSetMode: React.FC = () => {
           </div>
 
           <div className="space-y-4">
+            {/* Image Upload */}
+            <div className="space-y-2">
+              <label className="text-xs font-black text-gray-500 uppercase tracking-widest flex justify-between items-center">
+                <span>📸 รูปภาพต้นแบบ (Optional)</span>
+                {selectedImage && (
+                  <button 
+                    onClick={() => setSelectedImage(null)}
+                    className="text-red-500 hover:text-red-400 text-[10px] font-bold"
+                  >
+                    ลบรูป
+                  </button>
+                )}
+              </label>
+              <div className="relative group">
+                <input 
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  className="hidden"
+                  id="movie-char-upload"
+                />
+                <label 
+                  htmlFor="movie-char-upload"
+                  className={`w-full aspect-video rounded-xl border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all overflow-hidden ${
+                    selectedImage 
+                      ? 'border-[#0066ff] bg-[#0066ff]/5' 
+                      : 'border-border bg-card hover:border-gray-500'
+                  }`}
+                >
+                  {selectedImage ? (
+                    <img src={selectedImage} className="w-full h-full object-contain" alt="Selected" />
+                  ) : (
+                    <>
+                      <PhotoIcon className="w-8 h-8 text-gray-600 mb-2" />
+                      <span className="text-xs text-gray-500 font-bold">คลิกเพื่ออัปโหลดรูปตัวละคร</span>
+                    </>
+                  )}
+                </label>
+              </div>
+            </div>
+
             {mode !== 'ai_gen' && (
               <div className="space-y-2 animate-fade-in">
                 <label className="text-xs font-black text-gray-500 uppercase tracking-widest">

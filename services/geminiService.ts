@@ -641,7 +641,7 @@ export const generateFigureImage = async (imageBase64: string): Promise<string> 
   });
 };
 
-export const generateMovieSetPrompt = async (concept: string, fullObject: boolean = false): Promise<string> => {
+export const generateMovieSetPrompt = async (concept: string, fullObject: boolean = false, imageData?: string): Promise<string> => {
   const apiKey = getEffectiveApiKey();
   const ai = new GoogleGenAI({ apiKey });
   const model = "gemini-3-flash-preview";
@@ -653,7 +653,7 @@ export const generateMovieSetPrompt = async (concept: string, fullObject: boolea
 
     **CORE INSTRUCTIONS (MUST FOLLOW):**
     - If the concept is "A mysterious unknown character", you MUST invent a creative and eerie character that fits the abandoned movie set theme.
-    - Use the uploaded image of the character as the exact reference. Preserve the original proportions, materials, colors, textures, and facial features. Do not redesign or stylize the character.
+    - ${imageData ? "Use the provided image of the character as the exact reference. Preserve the original proportions, materials, colors, textures, and facial features. Do not redesign or stylize the character." : "Preserve the original proportions, materials, colors, textures, and facial features of the character. Do not redesign or stylize the character."}
     - POV shot inside an abandoned [TYPE OF LOCATION: television studio / commercial set / real-world filming location]. The viewer is holding a flashlight, creating a single circular beam of light while the rest of the space fades into darkness.
     - The flashlight reveals the character(s) positioned as if it was left behind after filming: [POSITION: lying on the floor / collapsed in a corner / resting on a table / slumped against a wall].
     - The character(s) must feel completely lifeless and inactive: no performance, no intentional pose, no sense of presence. If it's a puppet or costume, no visible hand, rod, string, or person inside.
@@ -687,10 +687,24 @@ export const generateMovieSetPrompt = async (concept: string, fullObject: boolea
     `}
   `;
 
+  const contents: any[] = [{ text: prompt }];
+  if (imageData) {
+    const [mimeType, base64Data] = imageData.split(',')[0].split(':')[1].split(';')[0] === 'image/png' || imageData.split(',')[0].split(':')[1].split(';')[0] === 'image/jpeg' 
+      ? [imageData.split(',')[0].split(':')[1].split(';')[0], imageData.split(',')[1]]
+      : ['image/png', imageData.split(',')[1]]; // Default to png if split fails or unexpected mime
+    
+    contents.push({
+      inlineData: {
+        mimeType,
+        data: base64Data
+      }
+    });
+  }
+
   return callWithRetry(async () => {
     const response = await ai.models.generateContent({
       model,
-      contents: prompt,
+      contents: { parts: contents.map(c => typeof c === 'string' ? { text: c } : (c.text ? { text: c.text } : { inlineData: c.inlineData })) },
       config: fullObject ? {
         responseMimeType: "application/json",
         responseSchema: {
