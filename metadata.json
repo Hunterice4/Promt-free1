@@ -1,0 +1,8 @@
+{
+  "name": "Remix: Remix: Remix: Autodraw Pro",
+  "description": "AI-Powered Viral Script \u0026 Character Generator. ปลุกเสกสิ่งของให้มีชีวิตพร้อมวาดภาพประกอบสุดโปรด้วยพลัง Gemini AI",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
