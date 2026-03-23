@@ -33,6 +33,7 @@ const emotionOptions = [
   { type: CharacterEmotion.Professional, label: 'มืออาชีพ', icon: '🧐' },
   { type: CharacterEmotion.Depressed, label: 'ซึมเศร้า', icon: '😭' },
   { type: CharacterEmotion.Psychotic, label: 'โรคจิต', icon: '🤪' },
+  { type: CharacterEmotion.Painful, label: 'เจ็บปวด', icon: '😫' },
 ];
 
 export const InputSection: React.FC<InputSectionProps> = ({

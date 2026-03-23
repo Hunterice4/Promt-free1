@@ -7,11 +7,12 @@ import { VisionMode } from './components/VisionMode';
 import { FigureMode } from './components/FigureMode';
 import { MovieSetMode } from './components/MovieSetMode';
 import { TalkingMode } from './components/TalkingMode';
+import { PromptGenMode } from './components/PromptGenMode';
 import { setCustomApiKey } from './services/geminiService';
-import { CubeIcon, UserIcon, BookOpenIcon, Cog6ToothIcon, XMarkIcon, KeyIcon, PhotoIcon, EyeIcon, PuzzlePieceIcon, FaceSmileIcon, SparklesIcon } from '@heroicons/react/24/solid';
+import { CubeIcon, UserIcon, BookOpenIcon, Cog6ToothIcon, XMarkIcon, KeyIcon, PhotoIcon, EyeIcon, PuzzlePieceIcon, FaceSmileIcon, SparklesIcon, HashtagIcon } from '@heroicons/react/24/solid';
 
 const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'object' | 'character' | 'story' | 'vision' | 'figure' | 'talking' | 'movie'>('object');
+  const [activeTab, setActiveTab] = useState<'object' | 'character' | 'story' | 'vision' | 'figure' | 'talking' | 'movie' | 'promptgen'>('object');
   const [showSettings, setShowSettings] = useState(false);
   const [apiKey, setApiKey] = useState(localStorage.getItem('gemini_api_key') || '');
   const [skipImages, setSkipImages] = useState(localStorage.getItem('skip_images') === 'true');
@@ -128,6 +129,12 @@ const App: React.FC = () => {
               label="Abandoned Movie" 
             />
             <TabButton 
+              active={activeTab === 'promptgen'} 
+              onClick={() => setActiveTab('promptgen')} 
+              icon={<HashtagIcon className="w-5 h-5" />} 
+              label="Image/Video to Prompt" 
+            />
+            <TabButton 
               active={activeTab === 'talking'} 
               onClick={() => setActiveTab('talking')} 
               icon={<FaceSmileIcon className="w-5 h-5" />} 
@@ -140,6 +147,7 @@ const App: React.FC = () => {
           {/* Mobile Menu (Simplified for now) */}
           <div className="md:hidden flex items-center gap-1 overflow-x-auto max-w-[200px] no-scrollbar">
              <button onClick={() => setActiveTab('object')} className={`p-2 rounded-lg ${activeTab === 'object' ? 'text-[#0066ff]' : 'text-gray-500'}`}><CubeIcon className="w-5 h-5" /></button>
+             <button onClick={() => setActiveTab('promptgen')} className={`p-2 rounded-lg ${activeTab === 'promptgen' ? 'text-[#0066ff]' : 'text-gray-500'}`}><HashtagIcon className="w-5 h-5" /></button>
              <button onClick={() => setActiveTab('figure')} className={`p-2 rounded-lg ${activeTab === 'figure' ? 'text-[#0066ff]' : 'text-gray-500'}`}><PuzzlePieceIcon className="w-5 h-5" /></button>
              <button onClick={() => setActiveTab('movie')} className={`p-2 rounded-lg ${activeTab === 'movie' ? 'text-[#0066ff]' : 'text-gray-500'}`}><SparklesIcon className="w-5 h-5" /></button>
              <button onClick={() => setActiveTab('talking')} className={`p-2 rounded-lg ${activeTab === 'talking' ? 'text-[#0066ff]' : 'text-gray-500'}`}><FaceSmileIcon className="w-5 h-5" /></button>
@@ -254,6 +262,7 @@ const App: React.FC = () => {
         {activeTab === 'figure' && <FigureMode />}
         {activeTab === 'movie' && <MovieSetMode />}
         {activeTab === 'talking' && <TalkingMode />}
+        {activeTab === 'promptgen' && <PromptGenMode />}
       </div>
     </div>
   );

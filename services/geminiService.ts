@@ -1,6 +1,6 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
-import { GenerateParams, ViralScript, CharacterEmotion, ScriptTemplate, CharacterParams, CharacterData, StoryParams, StoryData, ScriptFramework } from "../types";
+import { GenerateParams, ViralScript, CharacterEmotion, ScriptTemplate, CharacterParams, CharacterData, StoryParams, StoryData, ScriptFramework, DetailedPromptResult, VisualStyle } from "../types";
 
 const RANDOM_OBJECTS = [
   "ทุเรียนหลงฤดู", "ยาดมหมดอายุ", "หมอนข้างเน่า", "พัดลมเสียงดัง", 
@@ -185,7 +185,7 @@ export const generateViralScript = async (params: GenerateParams): Promise<Viral
       templateInstruction = `
     Personality (สำคัญมาก):
     - สิ่งของนี้ "มีชีวิต" และกำลังเล่าเรื่องราวสุดรันทดของตัวเอง
-    - Tone of Voice: เศร้าสร้อย (Melancholic), ตัดพ้อ, น่าสงสาร, ดราม่าเรียกน้ำตา
+    - Tone of Voice: เศ้ราสร้อย (Melancholic), ตัดพ้อ, น่าสงสาร, ดราม่าเรียกน้ำตา
     - ภาษา: ใช้ภาษาที่สะเทือนอารมณ์ บีบคั้นหัวใจ
     - เนื้อหา: เล่าถึงความเสียสละของตัวเอง หรือการถูกทอดทิ้ง ถูกใช้งานอย่างหนักหน่วงโดยไม่มีใครเห็นค่า
       `;
@@ -237,6 +237,11 @@ export const generateViralScript = async (params: GenerateParams): Promise<Viral
       break;
   }
 
+  let styleInstruction = "";
+  if (params.style === VisualStyle.ThreeD) {
+    styleInstruction = "The visual style MUST be 3D Disney-Pixar style animation with high-quality textures, expressive lighting, and soft shadows.";
+  }
+
   const prompt = `
     คุณคือ Creative Director มือหนึ่งของ TikTok/Reels ที่เชี่ยวชาญการทำคลิปไวรัล
     
@@ -249,6 +254,7 @@ export const generateViralScript = async (params: GenerateParams): Promise<Viral
     ${userContext}
     
     ${templateInstruction}
+    ${styleInstruction}
 
     **FRAMEWORK INSTRUCTION:**
     You MUST follow the logic of the selected framework: ${params.framework}
@@ -269,6 +275,7 @@ export const generateViralScript = async (params: GenerateParams): Promise<Viral
     - **IMPORTANT FOR TEXT RENDERING:** Describe the text as: "Large, bold, simple Thai typography rendered directly on the image, high contrast against background, clean font, easy to read".
     - The headline should be the "title" generated in the JSON.
     - **USER SPECIFIC:** The user wants the headline to be ONLY in the image ("เอาให้มันแค่ในรูปพอ"). Ensure it is visually integrated into the Scene 1 image prompt.
+    - **FORMAT:** The headline in the image prompt should be described as: 'ข้อความพาดหัวบนภาพ (ภาษาไทยเท่านั้น): "[TITLE]"'
     - Headline status: ${params.includeHeadline ? "ENABLED (Add clear Thai text overlay description to Scene 1 image prompt using the 'title' field)" : "DISABLED"}
     
     - **ข้อห้ามเด็ดขาด (Strict Constraint): ห้ามใช้คำว่า "ทาส" (Slave) ในบทพูดทุกกรณี**
@@ -286,6 +293,7 @@ export const generateViralScript = async (params: GenerateParams): Promise<Viral
     - "${CharacterEmotion.Vulgar}" (หยาบดิบ): ด่ากราดแบบไม่ยั้ง หยาบคายขั้นสุด อนุญาตให้ใช้คำหยาบแบบจัดเต็ม (เช่น กู, มึง, ไอ้สัส, เหี้ย)
     - "${CharacterEmotion.Depressed}" (ซึมเศร้า/สิ้นหวัง): พูดเสียงเนือยๆ ตัดพ้อชีวิต ร้องไห้ฟูมฟาย สิ้นหวังกับทุกสิ่ง
     - "${CharacterEmotion.Psychotic}" (โรคจิต/หลอน): หัวเราะแบบบ้าคลั่ง พูดจาไม่รู้เรื่อง สลับอารมณ์ไปมา น่ากลัวแบบแปลกๆ
+    - "${CharacterEmotion.Painful}" (เจ็บปวด/ทรมาน): บิดเบี้ยวด้วยความเจ็บปวด หน้าตาเหยเก ร้องโอดครวญเหมือนกำลังจะพังทลาย
     
     VISUAL REQUIREMENT (IMPORTANT):
     The object MUST be ANTHROPOMORPHIC (Have a FACE, EYES, and a MOUTH). 
@@ -600,6 +608,64 @@ export const analyzeMediaToPrompt = async (mediaData: string, mimeType: string, 
 
     if (response.text) {
       return response.text.trim();
+    }
+    throw new Error("No response text generated");
+  });
+};
+
+export const analyzeMediaToPromptDetailed = async (mediaData: string, mimeType: string): Promise<DetailedPromptResult> => {
+  const apiKey = getEffectiveApiKey();
+  const ai = new GoogleGenAI({ apiKey });
+  const model = "gemini-3-flash-preview";
+
+  const prompt = `
+    Analyze this image/video and generate a comprehensive package for social media content creation.
+    
+    Return a JSON object with the following fields:
+    - "title": A catchy, viral-style title for the content.
+    - "description": A short, engaging description for the content.
+    - "prompt": A highly detailed, professional English prompt that can be used to recreate this exact visual style, composition, lighting, and subject in an AI image/video generator (like Midjourney, Stable Diffusion, or Luma).
+    - "hashtags": An array of 10-15 trending and relevant hashtags.
+    - "hacks": An array of 3-5 "hacks" or technical tips to get the best results when using this prompt (e.g., specific negative prompts, aspect ratios, or model settings).
+
+    **SAFETY INSTRUCTION:** If the content is sensitive, use artistic metaphors to describe it.
+    Return ONLY the JSON object.
+  `;
+
+  return callWithRetry(async () => {
+    const base64Data = mediaData.split(',')[1] || mediaData;
+    
+    const response = await ai.models.generateContent({
+      model,
+      contents: [
+        {
+          inlineData: {
+            data: base64Data,
+            mimeType: mimeType
+          }
+        },
+        {
+          text: prompt
+        }
+      ],
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            title: { type: Type.STRING },
+            description: { type: Type.STRING },
+            prompt: { type: Type.STRING },
+            hashtags: { type: Type.ARRAY, items: { type: Type.STRING } },
+            hacks: { type: Type.ARRAY, items: { type: Type.STRING } }
+          },
+          required: ["title", "description", "prompt", "hashtags", "hacks"]
+        }
+      }
+    });
+
+    if (response.text) {
+      return JSON.parse(response.text) as DetailedPromptResult;
     }
     throw new Error("No response text generated");
   });

@@ -35,7 +35,8 @@ export enum CharacterEmotion {
   Cute = "น่ารัก",
   Professional = "มืออาชีพ",
   Depressed = "ซึมเศร้า/สิ้นหวัง",
-  Psychotic = "โรคจิต/หลอน"
+  Psychotic = "โรคจิต/หลอน",
+  Painful = "เจ็บปวด/ทรมาน"
 }
 
 export enum ScriptTemplate {
@@ -115,4 +116,12 @@ export interface StoryParams {
   protagonist: string;
   tone: string;
   style: VisualStyle;
+}
+
+export interface DetailedPromptResult {
+  title: string;
+  description: string;
+  prompt: string;
+  hashtags: string[];
+  hacks: string[];
 }

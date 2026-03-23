@@ -9,7 +9,7 @@ export const ObjectMode: React.FC = () => {
   const [additionalDetails, setAdditionalDetails] = useState('');
   const [template, setTemplate] = useState<ScriptTemplate>(ScriptTemplate.Roast);
   const [framework, setFramework] = useState<ScriptFramework>(ScriptFramework.Auto);
-  const [includeHeadline, setIncludeHeadline] = useState(false);
+  const [includeHeadline, setIncludeHeadline] = useState(true);
   const [style, setStyle] = useState<VisualStyle>(VisualStyle.ThreeD);
   const [emotion, setEmotion] = useState<CharacterEmotion>(CharacterEmotion.Angry);
   const [sceneCount, setSceneCount] = useState(1);
