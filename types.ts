@@ -125,3 +125,18 @@ export interface DetailedPromptResult {
   hashtags: string[];
   hacks: string[];
 }
+
+export interface MascotParams {
+  dna: string;
+  gender: string;
+  age: string;
+  hair: string;
+  features: string;
+  style: VisualStyle;
+}
+
+export interface MascotData {
+  master_dna: string;
+  character_sheet_prompt: string;
+  character_sheet_url?: string;
+}

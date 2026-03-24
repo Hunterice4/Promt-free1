@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { ObjectMode } from './components/ObjectMode';
 import { CharacterMode } from './components/CharacterMode';
+import { MascotLockMode } from './components/MascotLockMode';
 import { StoryMode } from './components/StoryMode';
 import { VisionMode } from './components/VisionMode';
 import { FigureMode } from './components/FigureMode';
@@ -12,7 +13,7 @@ import { setCustomApiKey } from './services/geminiService';
 import { CubeIcon, UserIcon, BookOpenIcon, Cog6ToothIcon, XMarkIcon, KeyIcon, PhotoIcon, EyeIcon, PuzzlePieceIcon, FaceSmileIcon, SparklesIcon, HashtagIcon } from '@heroicons/react/24/solid';
 
 const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'object' | 'character' | 'story' | 'vision' | 'figure' | 'talking' | 'movie' | 'promptgen'>('object');
+  const [activeTab, setActiveTab] = useState<'object' | 'character' | 'mascot' | 'story' | 'vision' | 'figure' | 'talking' | 'movie' | 'promptgen'>('object');
   const [showSettings, setShowSettings] = useState(false);
   const [apiKey, setApiKey] = useState(localStorage.getItem('gemini_api_key') || '');
   const [skipImages, setSkipImages] = useState(localStorage.getItem('skip_images') === 'true');
@@ -105,6 +106,12 @@ const App: React.FC = () => {
               label="สร้างตัวละคร" 
             />
             <TabButton 
+              active={activeTab === 'mascot'} 
+              onClick={() => setActiveTab('mascot')} 
+              icon={<UserIcon className="w-5 h-5 text-yellow-500" />} 
+              label="Mascot ล็อกหน้า" 
+            />
+            <TabButton 
               active={activeTab === 'story'} 
               onClick={() => setActiveTab('story')} 
               icon={<BookOpenIcon className="w-5 h-5" />} 
@@ -147,6 +154,7 @@ const App: React.FC = () => {
           {/* Mobile Menu (Simplified for now) */}
           <div className="md:hidden flex items-center gap-1 overflow-x-auto max-w-[200px] no-scrollbar">
              <button onClick={() => setActiveTab('object')} className={`p-2 rounded-lg ${activeTab === 'object' ? 'text-[#0066ff]' : 'text-gray-500'}`}><CubeIcon className="w-5 h-5" /></button>
+             <button onClick={() => setActiveTab('mascot')} className={`p-2 rounded-lg ${activeTab === 'mascot' ? 'text-yellow-500' : 'text-gray-500'}`}><UserIcon className="w-5 h-5" /></button>
              <button onClick={() => setActiveTab('promptgen')} className={`p-2 rounded-lg ${activeTab === 'promptgen' ? 'text-[#0066ff]' : 'text-gray-500'}`}><HashtagIcon className="w-5 h-5" /></button>
              <button onClick={() => setActiveTab('figure')} className={`p-2 rounded-lg ${activeTab === 'figure' ? 'text-[#0066ff]' : 'text-gray-500'}`}><PuzzlePieceIcon className="w-5 h-5" /></button>
              <button onClick={() => setActiveTab('movie')} className={`p-2 rounded-lg ${activeTab === 'movie' ? 'text-[#0066ff]' : 'text-gray-500'}`}><SparklesIcon className="w-5 h-5" /></button>
@@ -257,6 +265,7 @@ const App: React.FC = () => {
       <div className="flex-1 overflow-y-auto relative bg-background">
         {activeTab === 'object' && <ObjectMode />}
         {activeTab === 'character' && <CharacterMode />}
+        {activeTab === 'mascot' && <MascotLockMode />}
         {activeTab === 'story' && <StoryMode />}
         {activeTab === 'vision' && <VisionMode />}
         {activeTab === 'figure' && <FigureMode />}

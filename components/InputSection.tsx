@@ -20,6 +20,8 @@ interface InputSectionProps {
   setEmotion: (val: CharacterEmotion) => void;
   sceneCount: number;
   setSceneCount: (val: number) => void;
+  skipImages: boolean;
+  setSkipImages: (val: boolean) => void;
   onGenerate: () => void;
   onAutoGenObject: () => Promise<void>;
   loading: boolean;
@@ -53,6 +55,8 @@ export const InputSection: React.FC<InputSectionProps> = ({
   setEmotion,
   sceneCount,
   setSceneCount,
+  skipImages,
+  setSkipImages,
   onGenerate,
   onAutoGenObject,
   loading
@@ -170,6 +174,26 @@ export const InputSection: React.FC<InputSectionProps> = ({
             <span
               className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
                 includeHeadline ? 'translate-x-6' : 'translate-x-1'
+              }`}
+            />
+          </button>
+        </div>
+
+        {/* Skip Images Toggle */}
+        <div className="flex items-center justify-between bg-card p-4 rounded-xl border border-border">
+          <div className="space-y-1">
+            <label className="text-xs font-black text-white uppercase tracking-wider">ไม่สร้างรูปภาพ (Skip Images)</label>
+            <p className="text-[10px] text-gray-500">สร้างเฉพาะสคริปต์ (ประหยัดโควตา)</p>
+          </div>
+          <button
+            onClick={() => setSkipImages(!skipImages)}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
+              skipImages ? 'bg-orange-500' : 'bg-gray-700'
+            }`}
+          >
+            <span
+              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                skipImages ? 'translate-x-6' : 'translate-x-1'
               }`}
             />
           </button>

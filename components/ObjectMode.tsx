@@ -1,8 +1,9 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { InputSection } from './InputSection';
 import { OutputSection } from './OutputSection';
 import { generateViralScript, generateRandomObject, generateImage } from '../services/geminiService';
 import { VisualStyle, ViralScript, CharacterEmotion, ScriptTemplate, ScriptFramework } from '../types';
+import { toast, Toaster } from 'sonner';
 
 export const ObjectMode: React.FC = () => {
   const [objectName, setObjectName] = useState('');
@@ -13,9 +14,14 @@ export const ObjectMode: React.FC = () => {
   const [style, setStyle] = useState<VisualStyle>(VisualStyle.ThreeD);
   const [emotion, setEmotion] = useState<CharacterEmotion>(CharacterEmotion.Angry);
   const [sceneCount, setSceneCount] = useState(1);
+  const [skipImages, setSkipImages] = useState(() => localStorage.getItem('skip_images') === 'true');
   const [loading, setLoading] = useState(false);
   const [loadingStatus, setLoadingStatus] = useState('');
   const [result, setResult] = useState<ViralScript | null>(null);
+
+  useEffect(() => {
+    localStorage.setItem('skip_images', String(skipImages));
+  }, [skipImages]);
 
   const handleAutoGenObject = useCallback(async () => {
     try {
@@ -47,10 +53,10 @@ export const ObjectMode: React.FC = () => {
       
       setResult(scriptData);
       
-      const skipImages = localStorage.getItem('skip_images') === 'true';
       if (skipImages) {
         setLoading(false);
         setLoadingStatus('');
+        toast.success('สร้างสคริปต์สำเร็จ! (ข้ามการสร้างรูปภาพตามที่ตั้งค่าไว้)');
         return;
       }
 
@@ -79,13 +85,26 @@ export const ObjectMode: React.FC = () => {
           }
         } catch (err: any) {
           console.error(`Failed image ${i}`, err);
-          const isQuota = err?.message?.includes('429') || 
-                          err?.error?.message?.includes('429') ||
-                          JSON.stringify(err).includes('429') ||
-                          JSON.stringify(err).includes('RESOURCE_EXHAUSTED');
+          const errorMsg = err?.message || JSON.stringify(err);
+          const isQuota = errorMsg.includes('429') || 
+                          errorMsg.includes('RESOURCE_EXHAUSTED') ||
+                          errorMsg.includes('QUOTA_EXCEEDED');
           
+          const isPermission = errorMsg.includes('403') || 
+                               errorMsg.includes('PERMISSION_DENIED');
+
           if (isQuota) {
-            setLoadingStatus(`โควตาเต็ม! ข้ามภาพที่ ${i + 1}... (ลองเปิดโหมด 'ไม่สร้างรูปภาพ' ในเมนูตั้งค่า)`);
+            toast.error(`โควตาเต็ม! ข้ามภาพที่ ${i + 1}`, {
+              description: "กรุณารอสักครู่ หรือลองเปิดโหมด 'ไม่สร้างรูปภาพ' เพื่อประหยัดโควตา",
+              duration: 5000,
+            });
+            setLoadingStatus(`โควตาเต็ม! ข้ามภาพที่ ${i + 1}...`);
+          } else if (isPermission) {
+            toast.error(`API Key ไม่ถูกต้อง!`, {
+              description: "กรุณาตรวจสอบ API Key ของคุณในเมนูตั้งค่า",
+              duration: 5000,
+            });
+            setLoadingStatus(`API Key ไม่ถูกต้อง...`);
           } else {
             setLoadingStatus(`วาดภาพที่ ${i + 1} ไม่สำเร็จ...`);
           }
@@ -94,15 +113,27 @@ export const ObjectMode: React.FC = () => {
       }
     } catch (error: any) {
       console.error("Failed to generate content", error);
-      let errorMessage = "เกิดข้อผิดพลาดในการสร้างคอนเทนต์ กรุณาลองใหม่ หรือเช็ค API Key";
+      const errorMsg = error?.message || "";
       
-      if (error?.message?.includes('500') || error?.message?.includes('xhr error')) {
-        errorMessage = "ระบบขัดข้องชั่วคราว (Gemini API 500) กรุณาลองใหม่อีกครั้งในอีกสักครู่";
-      } else if (error?.message?.includes('429') || error?.message?.includes('Quota exceeded') || error?.message?.includes('RESOURCE_EXHAUSTED')) {
-        errorMessage = "โควตาการใช้งานเต็ม (API Quota Exceeded) กรุณารอสักครู่ หรือลองใส่ API Key ของตัวเองในเมนูตั้งค่า หรือเปิดโหมด 'ไม่สร้างรูปภาพ' เพื่อประหยัดโควตาครับ";
+      if (errorMsg.includes('500') || errorMsg.includes('xhr error')) {
+        toast.error("ระบบขัดข้องชั่วคราว (Gemini API 500)", {
+          description: "กรุณาลองใหม่อีกครั้งในอีกสักครู่",
+        });
+      } else if (errorMsg.includes('429') || errorMsg.includes('Quota exceeded') || errorMsg.includes('RESOURCE_EXHAUSTED') || errorMsg.includes('QUOTA_EXCEEDED')) {
+        toast.error("โควตาการใช้งานเต็ม!", {
+          description: "กรุณารอสักครู่ หรือเปิดโหมด 'ไม่สร้างรูปภาพ' เพื่อประหยัดโควตา",
+          duration: 6000,
+        });
+      } else if (errorMsg.includes('403') || errorMsg.includes('PERMISSION_DENIED')) {
+        toast.error("API Key ไม่ถูกต้อง!", {
+          description: "กรุณาตรวจสอบ API Key ของคุณในเมนูตั้งค่า",
+          duration: 6000,
+        });
+      } else {
+        toast.error("เกิดข้อผิดพลาดในการสร้างคอนเทนต์", {
+          description: "กรุณาลองใหม่ หรือเช็ค API Key ของคุณ",
+        });
       }
-      
-      alert(errorMessage);
     } finally {
       setLoading(false);
       setLoadingStatus('');
@@ -111,6 +142,7 @@ export const ObjectMode: React.FC = () => {
 
   return (
     <div className="flex flex-col lg:flex-row w-full lg:h-full">
+      <Toaster position="top-center" richColors />
       <InputSection
         objectName={objectName}
         setObjectName={setObjectName}
@@ -128,6 +160,8 @@ export const ObjectMode: React.FC = () => {
         setEmotion={setEmotion}
         sceneCount={sceneCount}
         setSceneCount={setSceneCount}
+        skipImages={skipImages}
+        setSkipImages={setSkipImages}
         onGenerate={handleGenerate}
         onAutoGenObject={handleAutoGenObject}
         loading={loading}

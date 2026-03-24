@@ -1,6 +1,6 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
-import { GenerateParams, ViralScript, CharacterEmotion, ScriptTemplate, CharacterParams, CharacterData, StoryParams, StoryData, ScriptFramework, DetailedPromptResult, VisualStyle } from "../types";
+import { GenerateParams, ViralScript, CharacterEmotion, ScriptTemplate, CharacterParams, CharacterData, StoryParams, StoryData, ScriptFramework, DetailedPromptResult, VisualStyle, MascotParams, MascotData } from "../types";
 
 const RANDOM_OBJECTS = [
   "ทุเรียนหลงฤดู", "ยาดมหมดอายุ", "หมอนข้างเน่า", "พัดลมเสียงดัง", 
@@ -120,10 +120,6 @@ const callWithRetry = async <T>(fn: () => Promise<T>, retries = MAX_RETRIES): Pr
       errorString.includes('403') ||
       errorString.includes('requested entity was not found');
 
-    if (isPermissionError) {
-      throw new Error("PERMISSION_DENIED: กรุณาตรวจสอบ API Key ของคุณ หรือเชื่อมต่อ Paid API Key ในเมนูตั้งค่าเพื่อใช้งานฟีเจอร์นี้ (โดยเฉพาะการสร้างวิดีโอ)");
-    }
-
     const isTransientError = 
       isQuotaError ||
       errorMessage.includes('500') || 
@@ -147,6 +143,15 @@ const callWithRetry = async <T>(fn: () => Promise<T>, retries = MAX_RETRIES): Pr
       await sleep(delay);
       return callWithRetry(fn, retries - 1);
     }
+
+    if (isQuotaError) {
+      throw new Error("QUOTA_EXCEEDED: โควตาการใช้งานเต็ม (API Quota Exceeded) กรุณารอสักครู่ หรือลองใส่ API Key ของตัวเองในเมนูตั้งค่า หรือเปิดโหมด 'ไม่สร้างรูปภาพ' เพื่อประหยัดโควตาครับ");
+    }
+
+    if (isPermissionError) {
+      throw new Error("PERMISSION_DENIED: กรุณาตรวจสอบ API Key ของคุณ หรือเชื่อมต่อ Paid API Key ในเมนูตั้งค่าเพื่อใช้งานฟีเจอร์นี้ (โดยเฉพาะการสร้างวิดีโอ)");
+    }
+
     throw error;
   }
 };
@@ -272,11 +277,11 @@ export const generateViralScript = async (params: GenerateParams): Promise<Viral
 
     **HEADLINE INSTRUCTION:**
     - If "Include Headline" is true: The FIRST scene's 'image_prompt' MUST include a large, bold, viral Thai headline text overlay that summarizes the video's hook.
-    - **IMPORTANT FOR TEXT RENDERING:** Describe the text as: "Large, bold, simple Thai typography rendered directly on the image, high contrast against background, clean font, easy to read".
+    - **IMPORTANT FOR TEXT RENDERING:** Describe the text as: "Large, bold, simple Thai typography rendered directly on the image AT THE TOP OF THE FRAME, high contrast against background, clean font, easy to read".
     - The headline should be the "title" generated in the JSON.
-    - **USER SPECIFIC:** The user wants the headline to be ONLY in the image ("เอาให้มันแค่ในรูปพอ"). Ensure it is visually integrated into the Scene 1 image prompt.
-    - **FORMAT:** The headline in the image prompt should be described as: 'ข้อความพาดหัวบนภาพ (ภาษาไทยเท่านั้น): "[TITLE]"'
-    - Headline status: ${params.includeHeadline ? "ENABLED (Add clear Thai text overlay description to Scene 1 image prompt using the 'title' field)" : "DISABLED"}
+    - **USER SPECIFIC:** The user wants the headline to be ONLY in the image ("เอาให้มันแค่ในรูปพอ") and ALWAYS AT THE TOP ("ไว้บนสุดเสมอ"). Ensure it is visually integrated into the Scene 1 image prompt.
+    - **FORMAT:** The headline in the image prompt should be described as: 'ข้อความพาดหัวบนภาพ (ภาษาไทยเท่านั้น) วางไว้ที่ส่วนบนสุดของภาพ: "[TITLE]"'
+    - Headline status: ${params.includeHeadline ? "ENABLED (Add clear Thai text overlay description to Scene 1 image prompt using the 'title' field, ensuring it is at the TOP)" : "DISABLED"}
     
     - **ข้อห้ามเด็ดขาด (Strict Constraint): ห้ามใช้คำว่า "ทาส" (Slave) ในบทพูดทุกกรณี**
     
@@ -840,6 +845,102 @@ export const generateStory = async (params: StoryParams): Promise<StoryData> => 
 
     if (response.text) {
       return JSON.parse(response.text) as StoryData;
+    }
+    throw new Error("No response text generated");
+  });
+};
+
+export const generateMascotDNA = async (params: MascotParams): Promise<MascotData> => {
+  const apiKey = getEffectiveApiKey();
+  const ai = new GoogleGenAI({ apiKey });
+  const model = "gemini-3-flash-preview";
+
+  const prompt = `
+    คุณคือ AI Prompt Engineer ผู้เชี่ยวชาญเทคนิค "Character Consistency (ล็อกหน้าตัวละครถาวร)"
+    Task: สร้าง "รหัสพันธุกรรม" (Master DNA Prompt) และ "แม่พิมพ์" (Character Sheet Prompt)
+    
+    ข้อมูลเบื้องต้น:
+    - คอนเซปต์: ${params.dna}
+    - เพศ: ${params.gender}
+    - อายุ: ${params.age}
+    - ทรงผม: ${params.hair}
+    - จุดเด่นบนหน้า: ${params.features}
+    - สไตล์: ${params.style}
+
+    **ขั้นตอนที่ 1: สร้าง Master DNA Prompt**
+    เขียนรายละเอียดหน้าตาให้ชัดเจนที่สุด โครงสร้าง: [เพศ/อายุ] + [ทรงผม/สีผม] + [จุดเด่นบนหน้า] + [สไตล์ภาพ]
+    ตัวอย่าง (ถ้าเลือก Realistic): (Realistic handsome young man, cool black hair, round glasses, small goatee on chin, confident smile, photorealistic style)
+    ตัวอย่าง (ถ้าเลือก 3D): (Mascot handsome young man, cool black hair, round glasses, small goatee on chin, confident smile, Pixar 3D style)
+
+    **ขั้นตอนที่ 2: สร้าง Character Sheet Prompt**
+    สร้างคำสั่งสำหรับสร้างภาพเดียวที่มีครบทุกมุม (Front, Side, Back) เพื่อใช้เป็นแม่พิมพ์
+    ตัวอย่าง: Character sheet of [Master DNA] showing 3 different angles: Front view, Side view, and Back view. Wearing white t-shirt and jeans. White background. Style ${params.style}. High resolution 8k.
+
+    Output ต้องเป็น JSON เท่านั้น:
+    {
+      "master_dna": "ข้อความ Master DNA ภาษาไทยที่สรุปจุดเด่นทั้งหมด (รวมสไตล์ที่เลือกด้วย)",
+      "character_sheet_prompt": "English prompt for generating the 3-angle character sheet. MUST end with --ar 16:9"
+    }
+  `;
+
+  return callWithRetry(async () => {
+    const response = await ai.models.generateContent({
+      model,
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            master_dna: { type: Type.STRING },
+            character_sheet_prompt: { type: Type.STRING }
+          },
+          required: ["master_dna", "character_sheet_prompt"]
+        }
+      }
+    });
+
+    if (response.text) {
+      return JSON.parse(response.text) as MascotData;
+    }
+    throw new Error("No response text generated");
+  });
+};
+
+export const generateMascotScene = async (masterDna: string, action: string, style: VisualStyle): Promise<string> => {
+  const apiKey = getEffectiveApiKey();
+  const ai = new GoogleGenAI({ apiKey });
+  const model = "gemini-3-flash-preview";
+
+  const prompt = `
+    คุณคือ AI Prompt Engineer ผู้เชี่ยวชาญการใช้เทคนิค Hybrid (Image + Text)
+    Task: สร้าง Prompt สำหรับสร้างรูปตัวละคร (Character) ในสถานการณ์ใหม่ โดยใช้ Master DNA เดิม และต้องรักษาความสมจริงหรือสไตล์เดิมไว้อย่างเคร่งครัด
+    
+    Master DNA (รหัสพันธุกรรมเดิม): ${masterDna}
+    สถานการณ์/การกระทำใหม่: ${action}
+    สไตล์ที่ต้องใช้: ${style}
+
+    กฎการสร้าง Prompt:
+    [Master DNA เดิม (แปลเป็นอังกฤษ)] + [ชุดใหม่/การกระทำ/สถานที่] + [สไตล์ภาพ: ${style}]
+    
+    ข้อควรระวัง: 
+    - ถ้าสไตล์คือ Realistic ห้ามใช้คำว่า "Mascot" หรือ "Cartoon" หรือ "Animation" ใน Prompt เด็ดขาด ให้ใช้คำแนว "Photorealistic", "Hyper-realistic", "Real person" แทน
+    - ถ้าสไตล์คือ 3D Animation ให้ใช้คำแนว "Pixar style", "Disney style", "3D Render"
+    
+    ตัวอย่าง (ถ้า Realistic): (Realistic handsome young man, cool black hair, round glasses, small goatee on chin) wearing a tuxedo, standing and presenting work in a modern office, photorealistic, 8k, highly detailed.
+    ตัวอย่าง (ถ้า 3D): (Mascot handsome young man, cool black hair, round glasses, small goatee on chin) wearing a tuxedo, standing and presenting work in a modern office, Pixar 3D style, high resolution.
+
+    Output: ให้ตอบเฉพาะ Prompt ภาษาอังกฤษ 1 ย่อหน้าสั้นๆ สำหรับเจนภาพ ห้ามมีข้อความอื่นปน และต้องจบด้วย --ar 3:4
+  `;
+
+  return callWithRetry(async () => {
+    const response = await ai.models.generateContent({
+      model,
+      contents: prompt
+    });
+
+    if (response.text) {
+      return response.text.trim();
     }
     throw new Error("No response text generated");
   });
