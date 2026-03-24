@@ -9,11 +9,12 @@ import { FigureMode } from './components/FigureMode';
 import { MovieSetMode } from './components/MovieSetMode';
 import { TalkingMode } from './components/TalkingMode';
 import { PromptGenMode } from './components/PromptGenMode';
+import { VlogTourMode } from './components/VlogTourMode';
 import { setCustomApiKey } from './services/geminiService';
-import { CubeIcon, UserIcon, BookOpenIcon, Cog6ToothIcon, XMarkIcon, KeyIcon, PhotoIcon, EyeIcon, PuzzlePieceIcon, FaceSmileIcon, SparklesIcon, HashtagIcon } from '@heroicons/react/24/solid';
+import { CubeIcon, UserIcon, BookOpenIcon, Cog6ToothIcon, XMarkIcon, KeyIcon, PhotoIcon, EyeIcon, PuzzlePieceIcon, FaceSmileIcon, SparklesIcon, HashtagIcon, VideoCameraIcon, MapIcon } from '@heroicons/react/24/solid';
 
 const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'object' | 'character' | 'mascot' | 'story' | 'vision' | 'figure' | 'talking' | 'movie' | 'promptgen'>('object');
+  const [activeTab, setActiveTab] = useState<'object' | 'character' | 'mascot' | 'story' | 'vision' | 'figure' | 'talking' | 'movie' | 'promptgen' | 'vlogtour'>('object');
   const [showSettings, setShowSettings] = useState(false);
   const [apiKey, setApiKey] = useState(localStorage.getItem('gemini_api_key') || '');
   const [skipImages, setSkipImages] = useState(localStorage.getItem('skip_images') === 'true');
@@ -118,10 +119,16 @@ const App: React.FC = () => {
               label="แต่งเนื้อเรื่อง" 
             />
             <TabButton 
+              active={activeTab === 'vlogtour'} 
+              onClick={() => setActiveTab('vlogtour')} 
+              icon={<MapIcon className="w-5 h-5 text-[#00aaff]" />} 
+              label="Vlog Tour" 
+            />
+            <TabButton 
               active={activeTab === 'vision'} 
               onClick={() => setActiveTab('vision')} 
-              icon={<EyeIcon className="w-5 h-5" />} 
-              label="แกะ Prompt" 
+              icon={<div className="flex -space-x-1"><PhotoIcon className="w-4 h-4" /><VideoCameraIcon className="w-4 h-4" /></div>} 
+              label="แกะ Prompt (รูป/วิดีโอ)" 
             />
             <TabButton 
               active={activeTab === 'figure'} 
@@ -138,7 +145,7 @@ const App: React.FC = () => {
             <TabButton 
               active={activeTab === 'promptgen'} 
               onClick={() => setActiveTab('promptgen')} 
-              icon={<HashtagIcon className="w-5 h-5" />} 
+              icon={<div className="flex -space-x-1"><PhotoIcon className="w-4 h-4" /><VideoCameraIcon className="w-4 h-4" /></div>} 
               label="Image/Video to Prompt" 
             />
             <TabButton 
@@ -154,6 +161,7 @@ const App: React.FC = () => {
           {/* Mobile Menu (Simplified for now) */}
           <div className="md:hidden flex items-center gap-1 overflow-x-auto max-w-[200px] no-scrollbar">
              <button onClick={() => setActiveTab('object')} className={`p-2 rounded-lg ${activeTab === 'object' ? 'text-[#0066ff]' : 'text-gray-500'}`}><CubeIcon className="w-5 h-5" /></button>
+             <button onClick={() => setActiveTab('vlogtour')} className={`p-2 rounded-lg ${activeTab === 'vlogtour' ? 'text-[#00aaff]' : 'text-gray-500'}`}><MapIcon className="w-5 h-5" /></button>
              <button onClick={() => setActiveTab('mascot')} className={`p-2 rounded-lg ${activeTab === 'mascot' ? 'text-yellow-500' : 'text-gray-500'}`}><UserIcon className="w-5 h-5" /></button>
              <button onClick={() => setActiveTab('promptgen')} className={`p-2 rounded-lg ${activeTab === 'promptgen' ? 'text-[#0066ff]' : 'text-gray-500'}`}><HashtagIcon className="w-5 h-5" /></button>
              <button onClick={() => setActiveTab('figure')} className={`p-2 rounded-lg ${activeTab === 'figure' ? 'text-[#0066ff]' : 'text-gray-500'}`}><PuzzlePieceIcon className="w-5 h-5" /></button>
@@ -272,6 +280,7 @@ const App: React.FC = () => {
         {activeTab === 'movie' && <MovieSetMode />}
         {activeTab === 'talking' && <TalkingMode />}
         {activeTab === 'promptgen' && <PromptGenMode />}
+        {activeTab === 'vlogtour' && <VlogTourMode />}
       </div>
     </div>
   );

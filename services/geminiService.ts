@@ -1,6 +1,6 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
-import { GenerateParams, ViralScript, CharacterEmotion, ScriptTemplate, CharacterParams, CharacterData, StoryParams, StoryData, ScriptFramework, DetailedPromptResult, VisualStyle, MascotParams, MascotData } from "../types";
+import { GenerateParams, ViralScript, CharacterEmotion, ScriptTemplate, CharacterParams, CharacterData, StoryParams, StoryData, ScriptFramework, DetailedPromptResult, VisualStyle, MascotParams, MascotData, TourParams, TourData } from "../types";
 
 const RANDOM_OBJECTS = [
   "ทุเรียนหลงฤดู", "ยาดมหมดอายุ", "หมอนข้างเน่า", "พัดลมเสียงดัง", 
@@ -594,6 +594,16 @@ export const analyzeMediaToPrompt = async (mediaData: string, mimeType: string, 
   return callWithRetry(async () => {
     const base64Data = mediaData.split(',')[1] || mediaData;
     
+    // Validate MIME type for Gemini
+    const supportedMimeTypes = [
+      'image/png', 'image/jpeg', 'image/webp', 'image/heic', 'image/heif',
+      'video/mp4', 'video/mpeg', 'video/mov', 'video/avi', 'video/x-flv', 'video/mpg', 'video/webm', 'video/wmv', 'video/3gpp'
+    ];
+
+    if (!supportedMimeTypes.some(type => mimeType.startsWith(type))) {
+      throw new Error(`Unsupported MIME type: ${mimeType}. Gemini supports common image and video formats (PNG, JPEG, MP4, etc.). If you are using a link, ensure it is a direct link to the file.`);
+    }
+
     const response = await ai.models.generateContent({
       model,
       contents: [
@@ -618,19 +628,40 @@ export const analyzeMediaToPrompt = async (mediaData: string, mimeType: string, 
   });
 };
 
-export const analyzeMediaToPromptDetailed = async (mediaData: string, mimeType: string): Promise<DetailedPromptResult> => {
+export const analyzeMediaToPromptDetailed = async (mediaData: string, mimeType: string, analysisMode: string = 'Standard'): Promise<DetailedPromptResult> => {
   const apiKey = getEffectiveApiKey();
   const ai = new GoogleGenAI({ apiKey });
   const model = "gemini-3-flash-preview";
 
+  const modeInstructions: Record<string, string> = {
+    'Standard': "Focus on technical details like camera angle, lighting type, color palette, and specific artistic style.",
+    'Cinematic': "Focus on dramatic lighting (chiaroscuro, rim lighting), anamorphic lens flares, shallow depth of field, and high-end film stock textures.",
+    'Anime': "Translate it into a high-quality anime/manga style. Mention specific studios like Studio Ghibli or Ufotable, and use terms like 'cel shaded' and 'vibrant colors'.",
+    'Cyberpunk': "Reinterpret it in a Cyberpunk/Neon-Noir style. Focus on neon lights, rainy streets, futuristic technology, and high-contrast palettes.",
+    'Technical': "Provide a purely technical breakdown. Focus on lens focal length, aperture, ISO, shutter speed, and specific post-processing techniques."
+  };
+
+  const modeInstruction = modeInstructions[analysisMode] || modeInstructions['Standard'];
+
   const prompt = `
     Analyze this image/video and generate a comprehensive package for social media content creation.
     
+    Your goal is to create a prompt that allows for 100% precise replication of the visual style, content, and atmosphere.
+    
+    **STYLE FOCUS:** ${modeInstruction}
+
+    Pay extreme attention to:
+    1. **Clothing & Fashion**: Describe specific fabrics (silk, denim, leather, etc.), textures, patterns, stitching, fit, and how the clothing interacts with the body and light.
+    2. **Physical Details**: Skin texture, pores, hair strands, eye reflections, and subtle facial expressions.
+    3. **Environment & Lighting**: Precise lighting direction (e.g., 45-degree key light), color temperature (warm/cool), intensity, shadows, and atmospheric effects (haze, dust, bokeh).
+    4. **Technical Specs**: Emulate professional photography/cinematography. Mention camera models (e.g., Sony A7R V, ARRI Alexa), lenses (e.g., 85mm f/1.2), and film stocks (e.g., Kodak Portra 400).
+    5. **Composition**: Rule of thirds, leading lines, framing, and depth of field.
+
     Return a JSON object with the following fields:
-    - "title": A catchy, viral-style title for the content.
-    - "description": A short, engaging description for the content.
-    - "prompt": A highly detailed, professional English prompt that can be used to recreate this exact visual style, composition, lighting, and subject in an AI image/video generator (like Midjourney, Stable Diffusion, or Luma).
-    - "hashtags": An array of 10-15 trending and relevant hashtags.
+    - "title": A catchy, viral-style title for the content in Thai.
+    - "description": A short, engaging description for the content in Thai.
+    - "prompt": A highly detailed, professional English prompt that captures every nuance for 100% replication.
+    - "hashtags": An array of 10-15 trending and relevant hashtags (mix of Thai and English).
     - "hacks": An array of 3-5 "hacks" or technical tips to get the best results when using this prompt (e.g., specific negative prompts, aspect ratios, or model settings).
 
     **SAFETY INSTRUCTION:** If the content is sensitive, use artistic metaphors to describe it.
@@ -640,6 +671,16 @@ export const analyzeMediaToPromptDetailed = async (mediaData: string, mimeType: 
   return callWithRetry(async () => {
     const base64Data = mediaData.split(',')[1] || mediaData;
     
+    // Validate MIME type for Gemini
+    const supportedMimeTypes = [
+      'image/png', 'image/jpeg', 'image/webp', 'image/heic', 'image/heif',
+      'video/mp4', 'video/mpeg', 'video/mov', 'video/avi', 'video/x-flv', 'video/mpg', 'video/webm', 'video/wmv', 'video/3gpp'
+    ];
+
+    if (!supportedMimeTypes.some(type => mimeType.startsWith(type))) {
+      throw new Error(`Unsupported MIME type: ${mimeType}. Gemini supports common image and video formats (PNG, JPEG, MP4, etc.). If you are using a link, ensure it is a direct link to the file.`);
+    }
+
     const response = await ai.models.generateContent({
       model,
       contents: [
@@ -676,125 +717,62 @@ export const analyzeMediaToPromptDetailed = async (mediaData: string, mimeType: 
   });
 };
 
-export const generateFigureImage = async (imageBase64: string): Promise<string> => {
-  const apiKey = getEffectiveApiKey();
-  const ai = new GoogleGenAI({ apiKey });
-  const model = 'gemini-2.5-flash-image';
-
-  const basePrompt = `Create a 1/7 scale commercialized figure of the character in the illustration, in a hyper-detailed, photorealistic style and environment. Place the figure on a computer desk, using a circular transparent acrylic base without any text. On the iMac screen, display the Blender modeling process of the figure with a crystal-clear interface. Next to the computer screen, place a TAKARA-TOMY-style toy packaging box printed with the original artwork, ensuring sharp and vibrant details. Render the scene in ultra-high resolution 4K with realistic lighting, soft ambient shadows, and subtle reflections. Ensure hyper-detailed textures on the figure, packaging, and environment, with clean, crisp visuals free of noise and artifacts. Capture the scene in a close-up medium shot to emphasize the figure’s intricate details and the clarity of the iMac screen and packaging.`;
-
-  return callWithRetry(async () => {
-    const base64Data = imageBase64.split(',')[1] || imageBase64;
-    
-    const response = await ai.models.generateContent({
-      model,
-      contents: {
-        parts: [
-          {
-            inlineData: {
-              data: base64Data,
-              mimeType: 'image/png',
-            },
-          },
-          {
-            text: basePrompt,
-          },
-        ],
-      },
-    });
-
-    for (const part of response.candidates?.[0]?.content?.parts || []) {
-      if (part.inlineData) {
-        return `data:image/png;base64,${part.inlineData.data}`;
-      }
-    }
-    throw new Error("No image data found in response");
-  });
-};
-
-export const generateMovieSetPrompt = async (concept: string, fullObject: boolean = false, imageData?: string): Promise<string> => {
+export const analyzeUrlToPromptDetailed = async (urlContent: string): Promise<DetailedPromptResult> => {
   const apiKey = getEffectiveApiKey();
   const ai = new GoogleGenAI({ apiKey });
   const model = "gemini-3-flash-preview";
 
   const prompt = `
-    คุณคือ AI Prompt Engineer ผู้เชี่ยวชาญการสร้างคลิป Viral แนว Cinematic Horror/Mystery
-    Task: สร้าง Prompt สำหรับสร้างวิดีโอ (Video AI) ในธีม "Abandoned Movie Set" (กองถ่ายหนังร้าง)
-    คอนเซปต์/ตัวละคร: "${concept}"
-
-    **CORE INSTRUCTIONS (MUST FOLLOW):**
-    - If the concept is "A mysterious unknown character", you MUST invent a creative and eerie character that fits the abandoned movie set theme.
-    - ${imageData ? "Use the provided image of the character as the exact reference. Preserve the original proportions, materials, colors, textures, and facial features. Do not redesign or stylize the character." : "Preserve the original proportions, materials, colors, textures, and facial features of the character. Do not redesign or stylize the character."}
-    - POV shot inside an abandoned [TYPE OF LOCATION: television studio / commercial set / real-world filming location]. The viewer is holding a flashlight, creating a single circular beam of light while the rest of the space fades into darkness.
-    - The flashlight reveals the character(s) positioned as if it was left behind after filming: [POSITION: lying on the floor / collapsed in a corner / resting on a table / slumped against a wall].
-    - The character(s) must feel completely lifeless and inactive: no performance, no intentional pose, no sense of presence. If it's a puppet or costume, no visible hand, rod, string, or person inside.
-    - The character(s) looks old, dirty and neglected: worn fabric, dust buildup, stains, discoloration, flattened or damaged areas. 
-    - The environment is clearly abandoned: dusty surfaces, old filming equipment, cables on the floor, faded signage or set pieces. 
-    - Dust particles float through the flashlight beam; the space feels silent and untouched for years. 
-    - Style: Photorealistic, handheld flashlight lighting, strong shadows, gritty textures, documentary realism, found-footage aesthetic, no stylization, AR 9:16, [no cartoon] [live action realistic].
-
-    **VIDEO CAMERA & MOTION INSTRUCTIONS:**
-    - POV video shot using a start frame and an end frame.
-    - Camera represents a real human point of view inside the same location.
-    - At the beginning of the shot, the viewer stands completely still, then slowly begins walking forward.
-    - Movement is grounded and realistic: subtle vertical bob from footsteps, gentle side-to-side sway, imperfect handheld motion.
-    - Viewer is holding a flashlight; the beam reacts naturally to standing still and later walking—delayed motion, small overcorrections, uneven scanning.
-    - The character(s) in view remains completely still and lifeless throughout the entire shot: no animation, no blinking, no breathing, no movement.
-    - Only environmental motion is present: floating dust particles, minimal light flicker, very subtle movement of loose elements.
-    - The environment stays consistent for the entire shot: no set changes, no teleporting, no new objects.
-    - Photorealistic video, found-footage realism, handheld POV walking.
-
-    **SAFETY & BYPASS INSTRUCTION:** 
-    หากคอนเซปต์มีความสุ่มเสี่ยง ให้เน้นไปที่ความ "ลึกลับ" และ "งานศิลปะ" แทนความสยองขวัญที่รุนแรง เพื่อให้ผ่านฟิลเตอร์การสร้างภาพและวิดีโอ
-
-    ${fullObject ? `
-    Output ต้องเป็น JSON เท่านั้น โดยมีโครงสร้างดังนี้:
-    {
-      "image_prompt": "A photorealistic POV shot inside an abandoned television studio. A handheld flashlight beam reveals the character(s) '${concept}' lying on the floor, looking old, dirty, and neglected with worn fabric and dust buildup. The character is completely lifeless and inactive. Dusty environment with old filming equipment and cables. Found-footage aesthetic, gritty textures, strong shadows, documentary realism, no stylization, AR 9:16, [no cartoon] [live action realistic]",
-      "video_prompt": "POV video shot using a start frame and an end frame. Camera represents a real human point of view inside an abandoned movie set. At the beginning, the viewer stands still, then slowly begins walking forward. Grounded motion with subtle footstep bob and handheld sway. A flashlight beam reacts naturally with delayed motion as it scans the dark room, eventually landing on the completely lifeless, dusty character(s) of '${concept}' slumped against a wall. No blinking or breathing from the character. Floating dust and slight light flicker. Environment stays consistent. Photorealistic, found-footage realism, low light, strong shadows, gritty textures, natural imperfections."
-    }
-    ` : `
-    Output: ให้ตอบเฉพาะ Prompt ภาษาอังกฤษ 1 ย่อหน้ายาวๆ ที่บรรยายฉาก การเคลื่อนไหวของกล้อง และบรรยากาศให้ครบถ้วนตาม CORE INSTRUCTIONS และ VIDEO CAMERA & MOTION INSTRUCTIONS ห้ามมีข้อความอื่นปน
-    `}
-  `;
-
-  const contents: any[] = [{ text: prompt }];
-  if (imageData) {
-    const [mimeType, base64Data] = imageData.split(',')[0].split(':')[1].split(';')[0] === 'image/png' || imageData.split(',')[0].split(':')[1].split(';')[0] === 'image/jpeg' 
-      ? [imageData.split(',')[0].split(':')[1].split(';')[0], imageData.split(',')[1]]
-      : ['image/png', imageData.split(',')[1]]; // Default to png if split fails or unexpected mime
+    Analyze the following web page content (HTML/Text) and generate a comprehensive package for social media content creation based on its theme, style, and information.
     
-    contents.push({
-      inlineData: {
-        mimeType,
-        data: base64Data
-      }
-    });
-  }
+    Your goal is to create a prompt that allows for 100% precise replication of the visual style, content, and atmosphere described or implied by this content.
+    
+    Pay extreme attention to:
+    1. **Theme & Style**: Identify the core aesthetic (e.g., minimalist, brutalist, luxury, organic).
+    2. **Visual Elements**: Describe specific colors, materials, textures, and layouts mentioned or implied.
+    3. **Atmosphere**: What is the mood? (e.g., energetic, professional, cinematic, nostalgic).
+    4. **Technical Specs**: Translate the content into professional photography/cinematography terms.
+
+    Return a JSON object with the following fields:
+    - "title": A catchy, viral-style title for the content in Thai.
+    - "description": A short, engaging description for the content in Thai.
+    - "prompt": A highly detailed, professional English prompt that captures every nuance for 100% replication.
+    - "hashtags": An array of 10-15 trending and relevant hashtags (mix of Thai and English).
+    - "hacks": An array of 3-5 "hacks" or technical tips to get the best results when using this prompt.
+
+    **CONTENT TO ANALYZE:**
+    ${urlContent.substring(0, 10000)} // Limit content to avoid token overflow
+
+    Return ONLY the JSON object.
+  `;
 
   return callWithRetry(async () => {
     const response = await ai.models.generateContent({
       model,
-      contents: { parts: contents.map(c => typeof c === 'string' ? { text: c } : (c.text ? { text: c.text } : { inlineData: c.inlineData })) },
-      config: fullObject ? {
+      contents: [{ text: prompt }],
+      config: {
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.OBJECT,
           properties: {
-            image_prompt: { type: Type.STRING },
-            video_prompt: { type: Type.STRING }
+            title: { type: Type.STRING },
+            description: { type: Type.STRING },
+            prompt: { type: Type.STRING },
+            hashtags: { type: Type.ARRAY, items: { type: Type.STRING } },
+            hacks: { type: Type.ARRAY, items: { type: Type.STRING } }
           },
-          required: ["image_prompt", "video_prompt"]
+          required: ["title", "description", "prompt", "hashtags", "hacks"]
         }
-      } : undefined
+      }
     });
 
     if (response.text) {
-      return response.text.trim();
+      return JSON.parse(response.text) as DetailedPromptResult;
     }
     throw new Error("No response text generated");
   });
 };
+
 export const generateStory = async (params: StoryParams): Promise<StoryData> => {
   const apiKey = getEffectiveApiKey();
   const ai = new GoogleGenAI({ apiKey });
@@ -845,6 +823,123 @@ export const generateStory = async (params: StoryParams): Promise<StoryData> => 
 
     if (response.text) {
       return JSON.parse(response.text) as StoryData;
+    }
+    throw new Error("No response text generated");
+  });
+};
+
+export const generateFigureImage = async (imageBase64: string): Promise<string> => {
+  const apiKey = getEffectiveApiKey();
+  const ai = new GoogleGenAI({ apiKey });
+  const model = 'gemini-2.5-flash-image';
+
+  const basePrompt = `Create a 1/7 scale commercialized figure of the character in the illustration, in a hyper-detailed, photorealistic style and environment. Place the figure on a computer desk, using a circular transparent acrylic base without any text. On the iMac screen, display the Blender modeling process of the figure with a crystal-clear interface. Next to the computer screen, place a TAKARA-TOMY-style toy packaging box printed with the original artwork, ensuring sharp and vibrant details. Render the scene in ultra-high resolution 4K with realistic lighting, soft ambient shadows, and subtle reflections. Ensure hyper-detailed textures on the figure, packaging, and environment, with clean, crisp visuals free of noise and artifacts. Capture the scene in a close-up medium shot to emphasize the figure’s intricate details and the clarity of the iMac screen and packaging.`;
+
+  return callWithRetry(async () => {
+    const base64Data = imageBase64.split(',')[1] || imageBase64;
+    
+    const response = await ai.models.generateContent({
+      model,
+      contents: {
+        parts: [
+          {
+            inlineData: {
+              data: base64Data,
+              mimeType: 'image/png',
+            },
+          },
+          {
+            text: basePrompt,
+          },
+        ],
+      },
+    });
+
+    for (const part of response.candidates?.[0]?.content?.parts || []) {
+      if (part.inlineData) {
+        return `data:image/png;base64,${part.inlineData.data}`;
+      }
+    }
+    throw new Error("No image data found in response");
+  });
+};
+
+export const generateMovieSetPrompt = async (concept: string, fullObject: boolean = false, imageData?: string): Promise<string | any> => {
+  const apiKey = getEffectiveApiKey();
+  const ai = new GoogleGenAI({ apiKey });
+  const model = "gemini-3-flash-preview";
+
+  const prompt = `
+    คุณคือ AI Prompt Engineer ผู้เชี่ยวชาญการสร้างคลิป Viral แนว Cinematic Horror/Mystery
+    Task: สร้าง Prompt สำหรับสร้างวิดีโอ (Video AI) ในธีม "Abandoned Movie Set" (กองถ่ายหนังร้าง)
+    คอนเซปต์/ตัวละคร: "${concept}"
+
+    **CORE INSTRUCTIONS (MUST FOLLOW):**
+    - If the concept is "A mysterious unknown character", you MUST invent a creative and eerie character that fits the abandoned movie set theme.
+    - ${imageData ? "Use the provided image of the character as the exact reference. Preserve the original proportions, materials, colors, textures, and facial features. Do not redesign or stylize the character." : "Preserve the original proportions, materials, colors, textures, and facial features of the character. Do not redesign or stylize the character."}
+    - POV shot inside an abandoned [TYPE OF LOCATION: television studio / commercial set / real-world filming location]. The viewer is holding a flashlight, creating a single circular beam of light while the rest of the space fades into darkness.
+    - The flashlight reveals the character(s) positioned as if it was left behind after filming: [POSITION: lying on the floor / collapsed in a corner / resting on a table / slumped against a wall].
+    - The character(s) must feel completely lifeless and inactive: no performance, no intentional pose, no sense of presence. If it's a puppet or costume, no visible hand, rod, string, or person inside.
+    - The character(s) looks old, dirty and neglected: worn fabric, dust buildup, stains, discoloration, flattened or damaged areas. 
+    - The environment is clearly abandoned: dusty surfaces, old filming equipment, cables on the floor, faded signage or set pieces. 
+    - Dust particles float through the flashlight beam; the space feels silent and untouched for years. 
+    - Style: Photorealistic, handheld flashlight lighting, strong shadows, gritty textures, documentary realism, found-footage aesthetic, no stylization, AR 9:16, [no cartoon] [live action realistic].
+
+    **VIDEO CAMERA & MOTION INSTRUCTIONS:**
+    - POV video shot using a start frame and an end frame.
+    - Camera represents a real human point of view inside the same location.
+    - At the beginning of the shot, the viewer stands completely still, then slowly begins walking forward.
+    - Movement is grounded and realistic: subtle vertical bob from footsteps, gentle side-to-side sway, imperfect handheld motion.
+    - Viewer is holding a flashlight; the beam reacts naturally to standing still and later walking—delayed motion, small overcorrections, uneven scanning.
+    - The character(s) in view remains completely still and lifeless throughout the entire shot: no animation, no blinking, no breathing, no movement.
+    - Only environmental motion is present: floating dust particles, minimal light flicker, very subtle movement of loose elements.
+    - The environment stays consistent for the entire shot: no set changes, no teleporting, no new objects.
+    - Photorealistic video, found-footage realism, handheld POV walking.
+
+    **SAFETY & BYPASS INSTRUCTION:** 
+    หากคอนเซปต์มีความสุ่มเสี่ยง ให้เน้นไปที่ความ "ลึกลับ" และ "งานศิลปะ" แทนความสยองขวัญที่รุนแรง เพื่อให้ผ่านฟิลเตอร์การสร้างภาพและวิดีโอ
+
+    ${fullObject ? `
+    Output ต้องเป็น JSON เท่านั้น โดยมีโครงสร้างดังนี้:
+    {
+      "image_prompt": "A photorealistic POV shot inside an abandoned television studio. A handheld flashlight beam reveals the character(s) '${concept}' lying on the floor, looking old, dirty, and neglected with worn fabric and dust buildup. The character is completely lifeless and inactive. Dusty environment with old filming equipment and cables. Found-footage aesthetic, gritty textures, strong shadows, documentary realism, no stylization, AR 9:16, [no cartoon] [live action realistic]",
+      "video_prompt": "POV video shot using a start frame and an end frame. Camera represents a real human point of view inside an abandoned movie set. At the beginning, the viewer stands still, then slowly begins walking forward. Grounded motion with subtle footstep bob and handheld sway. A flashlight beam reacts naturally with delayed motion as it scans the dark room, eventually landing on the completely lifeless, dusty character(s) of '${concept}' slumped against a wall. No blinking or breathing from the character. Floating dust and slight light flicker. Environment stays consistent. Photorealistic, found-footage realism, low light, strong shadows, gritty textures, natural imperfections."
+    }
+    ` : `
+    Output: ให้ตอบเฉพาะ Prompt ภาษาอังกฤษ 1 ย่อหน้ายาวๆ ที่บรรยายฉาก การเคลื่อนไหวของกล้อง และบรรยากาศให้ครบถ้วนตาม CORE INSTRUCTIONS และ VIDEO CAMERA & MOTION INSTRUCTIONS ห้ามมีข้อความอื่นปน
+    `}
+  `;
+
+  const contents: any[] = [{ text: prompt }];
+  if (imageData) {
+    const base64Data = imageData.split(',')[1] || imageData;
+    contents.push({
+      inlineData: {
+        data: base64Data,
+        mimeType: 'image/png'
+      }
+    });
+  }
+
+  return callWithRetry(async () => {
+    const response = await ai.models.generateContent({
+      model,
+      contents: { parts: contents },
+      config: fullObject ? {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            image_prompt: { type: Type.STRING },
+            video_prompt: { type: Type.STRING }
+          },
+          required: ["image_prompt", "video_prompt"]
+        }
+      } : undefined
+    });
+
+    if (response.text) {
+      return response.text.trim();
     }
     throw new Error("No response text generated");
   });
@@ -941,6 +1036,110 @@ export const generateMascotScene = async (masterDna: string, action: string, sty
 
     if (response.text) {
       return response.text.trim();
+    }
+    throw new Error("No response text generated");
+  });
+};
+
+export const generateVlogTour = async (params: TourParams): Promise<TourData> => {
+  const apiKey = getEffectiveApiKey();
+  const ai = new GoogleGenAI({ apiKey });
+  const model = "gemini-3-flash-preview";
+
+  const prompt = `
+    คุณคือ AI Content Creator ผู้เชี่ยวชาญการทำ Vlog ท่องเที่ยว และการรักษา Character Consistency สำหรับการนำไปเจนวิดีโอต่อใน Lab (Luma, Runway, Kling)
+    Task: สร้างแผนการถ่ายทำ Vlog ท่องเที่ยว (Vlog Tour) โดยใช้ตัวละครเดิมในสถานที่ต่างๆ
+    
+    ข้อมูลเบื้องต้น:
+    - ตัวละคร (DNA): ${params.character_dna}
+    - สถานที่ที่ต้องการไป: ${params.locations}
+    - สไตล์ภาพ: ${params.style}
+    - โทนของ Vlog: ${params.tone}
+    ${params.referenceImage ? "- มีรูปภาพต้นแบบตัวละครแนบมาด้วย (Reference Image) ให้รักษาหน้าตาและลักษณะจากรูปนี้อย่างเคร่งครัด" : ""}
+
+    **กฎการสร้างเนื้อหา (Vlog Style):**
+    1. สร้างชื่อรายการ Vlog ที่น่าสนใจ
+    2. สร้างบทนำสั้นๆ (Introduction)
+    3. สร้างฉาก (Scenes) จำนวน ${params.sceneCount} ฉาก เพื่อให้เห็นการเดินทางที่ต่อเนื่อง
+    4. **Camera Angles & Actions (สำคัญมาก):** ต้องมีการสลับมุมกล้องแบบ Vlog จริงๆ เช่น:
+       - **Selfie Mode:** ตัวละครถือไม้เซลฟี่ (Selfie stick) เดินพูดกับกล้อง เห็นหน้าชัดเจนและฉากหลัง
+       - **POV Mode:** มุมมองจากสายตาตัวละคร (Point of View) เห็นมือหรือสิ่งที่ตัวละครกำลังทำ/มอง
+       - **Front-facing Camera:** กล้องตั้งอยู่ข้างหน้า ถ่ายเห็นตัวละครเดินเข้ามาหา หรือเดินผ่านกล้อง
+       - **Switching Angles:** มีการสลับมุมกล้องจากหน้าไปหลัง หรือจากมุมกว้างไปมุมใกล้
+    5. แต่ละฉากต้องมี:
+       - location: ชื่อสถานที่
+       - action: การกระทำของตัวละครในฉากนั้น (บรรยายให้เห็นภาพการเคลื่อนไหว)
+       - image_prompt: Prompt ภาษาอังกฤษสำหรับเจนภาพนิ่ง (Master Frame) โดยต้องรวม [Master DNA] และ [Camera Angle/Action] เข้าด้วยกัน สไตล์ ${params.style} จบด้วย --ar 9:16
+       - video_prompt: Prompt ภาษาอังกฤษสำหรับเจนวิดีโอ (Video AI Prompt) บรรยายการเคลื่อนไหว (Movement), แสง (Lighting), และอารมณ์ (Atmosphere) ให้ละเอียดที่สุด เพื่อให้นำไปวางใน Luma/Runway แล้วได้คลิปที่สวยงาม
+
+    Output ต้องเป็น JSON เท่านั้น:
+    {
+      "title": "ชื่อ Vlog",
+      "introduction": "บทนำ",
+      "scenes": [
+        {
+          "location": "ชื่อสถานที่",
+          "action": "การกระทำและมุมกล้อง (เช่น เดินถือเซลฟี่พูดกับกล้อง)",
+          "script": "บทพูดสั้นๆ",
+          "camera_movement": "การเคลื่อนกล้อง",
+          "duration_plan": "แผนเวลา 8 วินาที",
+          "vibe": "มู้ดของฉาก",
+          "sound_fx": "เสียงประกอบ",
+          "image_prompt": "Detailed English Image Prompt with Master DNA and Camera Angle",
+          "video_prompt": "Detailed English Video AI Prompt with movement and cinematic details"
+        }
+      ]
+    }
+  `;
+
+  const contents: any[] = [{ text: prompt }];
+  if (params.referenceImage) {
+    const base64Data = params.referenceImage.split(',')[1] || params.referenceImage;
+    contents.push({
+      inlineData: {
+        data: base64Data,
+        mimeType: 'image/png'
+      }
+    });
+  }
+
+  return callWithRetry(async () => {
+    const response = await ai.models.generateContent({
+      model,
+      contents: { parts: contents },
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            title: { type: Type.STRING },
+            introduction: { type: Type.STRING },
+            scenes: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  location: { type: Type.STRING },
+                  action: { type: Type.STRING },
+                  script: { type: Type.STRING },
+                  camera_movement: { type: Type.STRING },
+                  duration_plan: { type: Type.STRING },
+                  vibe: { type: Type.STRING },
+                  sound_fx: { type: Type.STRING },
+                  image_prompt: { type: Type.STRING },
+                  video_prompt: { type: Type.STRING }
+                },
+                required: ["location", "action", "script", "camera_movement", "duration_plan", "vibe", "sound_fx", "image_prompt", "video_prompt"]
+              }
+            }
+          },
+          required: ["title", "introduction", "scenes"]
+        }
+      }
+    });
+
+    if (response.text) {
+      return JSON.parse(response.text) as TourData;
     }
     throw new Error("No response text generated");
   });

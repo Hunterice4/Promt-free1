@@ -206,15 +206,21 @@ export const VisionMode: React.FC = () => {
           {/* File Upload */}
           <div className="space-y-2">
             <label className="text-xs font-black text-gray-500 uppercase tracking-widest flex items-center gap-2">
-              <PhotoIcon className="w-4 h-4" /> อัปโหลดไฟล์
+              <PhotoIcon className="w-4 h-4" />
+              <VideoCameraIcon className="w-4 h-4" />
+              อัปโหลดรูปภาพ/วิดีโอ
             </label>
             {!media ? (
               <div 
                 onClick={() => fileInputRef.current?.click()}
                 className="w-full aspect-video bg-card border-2 border-dashed border-border rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:border-[#0066ff]/50 hover:bg-[#0066ff]/5 transition-all group"
               >
-                <PhotoIcon className="w-8 h-8 text-gray-600 group-hover:text-[#0066ff] mb-2" />
-                <p className="text-xs font-bold text-gray-500">เลือกไฟล์สื่อ</p>
+                <div className="flex gap-2 mb-2">
+                  <PhotoIcon className="w-8 h-8 text-gray-600 group-hover:text-[#0066ff] transition-colors" />
+                  <VideoCameraIcon className="w-8 h-8 text-gray-600 group-hover:text-[#0066ff] transition-colors" />
+                </div>
+                <p className="text-xs font-bold text-gray-500">คลิกเพื่อเลือกไฟล์ (รูปภาพ หรือ วิดีโอ)</p>
+                <p className="text-[10px] text-gray-600 mt-1">รองรับ MP4, MOV, WebM, PNG, JPG, WebP</p>
               </div>
             ) : (
               <div className="relative group aspect-video rounded-2xl overflow-hidden border border-border bg-black">

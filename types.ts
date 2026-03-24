@@ -140,3 +140,31 @@ export interface MascotData {
   character_sheet_prompt: string;
   character_sheet_url?: string;
 }
+
+export interface TourScene {
+  location: string;
+  action: string;
+  script: string;
+  camera_movement: string;
+  duration_plan: string;
+  vibe: string;
+  sound_fx: string;
+  image_prompt: string;
+  video_prompt: string;
+  image_url?: string;
+}
+
+export interface TourData {
+  title: string;
+  introduction: string;
+  scenes: TourScene[];
+}
+
+export interface TourParams {
+  character_dna: string;
+  referenceImage?: string;
+  locations: string;
+  style: VisualStyle;
+  tone: string;
+  sceneCount: number;
+}

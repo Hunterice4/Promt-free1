@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { analyzeMediaToPromptDetailed } from '../services/geminiService';
+import { analyzeMediaToPromptDetailed, analyzeUrlToPromptDetailed } from '../services/geminiService';
 import { DetailedPromptResult } from '../types';
 import { 
   PhotoIcon, 
@@ -16,16 +16,19 @@ import {
   ArrowDownTrayIcon,
   HashtagIcon,
   LightBulbIcon,
-  InformationCircleIcon
+  InformationCircleIcon,
+  GlobeAltIcon
 } from '@heroicons/react/24/solid';
 
 export const PromptGenMode: React.FC = () => {
   const [media, setMedia] = useState<string | null>(null);
   const [mimeType, setMimeType] = useState<string>('');
+  const [urlContent, setUrlContent] = useState<string | null>(null);
   const [url, setUrl] = useState('');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<DetailedPromptResult | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
+  const [analysisMode, setAnalysisMode] = useState('Standard');
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -36,6 +39,7 @@ export const PromptGenMode: React.FC = () => {
       reader.onloadend = () => {
         setMedia(reader.result as string);
         setMimeType(file.type);
+        setUrlContent(null);
         setResult(null);
       };
       reader.readAsDataURL(file);
@@ -47,12 +51,26 @@ export const PromptGenMode: React.FC = () => {
     if (!url) return;
     setLoading(true);
     try {
+      // Try to fetch as media first
       const response = await fetch(`/api/proxy-media?url=${encodeURIComponent(url)}`);
       const data = await response.json();
-      if (data.error) throw new Error(data.error);
-      setMedia(data.data);
-      setMimeType(data.mimeType);
-      setResult(null);
+      
+      if (data.error) {
+        // If not media, try to fetch as text/HTML
+        const textResponse = await fetch(`/api/proxy-url?url=${encodeURIComponent(url)}`);
+        const textData = await textResponse.json();
+        if (textData.error) throw new Error(textData.error);
+        
+        setUrlContent(textData.content);
+        setMedia(null);
+        setMimeType('text/html');
+        setResult(null);
+      } else {
+        setMedia(data.data);
+        setMimeType(data.mimeType);
+        setUrlContent(null);
+        setResult(null);
+      }
     } catch (error: any) {
       alert("ไม่สามารถดึงข้อมูลจากลิงก์ได้: " + error.message);
     } finally {
@@ -61,11 +79,19 @@ export const PromptGenMode: React.FC = () => {
   };
 
   const handleAnalyze = async () => {
-    if (!media) return;
+    if (!media && !urlContent) return;
     setLoading(true);
     try {
-      const detailedResult = await analyzeMediaToPromptDetailed(media, mimeType);
-      setResult(detailedResult);
+      let detailedResult;
+      if (urlContent) {
+        detailedResult = await analyzeUrlToPromptDetailed(urlContent);
+      } else if (media) {
+        detailedResult = await analyzeMediaToPromptDetailed(media, mimeType, analysisMode);
+      }
+      
+      if (detailedResult) {
+        setResult(detailedResult);
+      }
     } catch (error: any) {
       console.error(error);
       alert("เกิดข้อผิดพลาดในการวิเคราะห์: " + error.message);
@@ -83,10 +109,19 @@ export const PromptGenMode: React.FC = () => {
   const clearAll = () => {
     setMedia(null);
     setMimeType('');
+    setUrlContent(null);
     setUrl('');
     setResult(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
+
+  const modes = [
+    { id: 'Standard', label: 'มาตรฐาน', icon: SparklesIcon },
+    { id: 'Cinematic', label: 'ภาพยนตร์', icon: VideoCameraIcon },
+    { id: 'Anime', label: 'อนิเมะ', icon: PhotoIcon },
+    { id: 'Cyberpunk', label: 'ไซเบอร์พังก์', icon: LightBulbIcon },
+    { id: 'Technical', label: 'เทคนิค', icon: InformationCircleIcon },
+  ];
 
   return (
     <div className="flex flex-col lg:flex-row w-full lg:h-full bg-background">
@@ -102,10 +137,33 @@ export const PromptGenMode: React.FC = () => {
         </div>
 
         <div className="space-y-6">
+          {/* Mode Selection */}
+          <div className="space-y-2">
+            <label className="text-xs font-black text-gray-500 uppercase tracking-widest flex items-center gap-2">
+              <SparklesIcon className="w-4 h-4" /> เลือกสไตล์การวิเคราะห์
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              {modes.map((mode) => (
+                <button
+                  key={mode.id}
+                  onClick={() => setAnalysisMode(mode.id)}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-xl text-[10px] font-black transition-all border ${
+                    analysisMode === mode.id
+                      ? 'bg-[#0066ff] border-[#0066ff] text-white shadow-lg shadow-[#0066ff]/20'
+                      : 'bg-card border-border text-gray-400 hover:border-gray-600'
+                  }`}
+                >
+                  <mode.icon className="w-3 h-3" />
+                  {mode.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* URL Input */}
           <form onSubmit={handleUrlSubmit} className="space-y-2">
             <label className="text-xs font-black text-gray-500 uppercase tracking-widest flex items-center gap-2">
-              <LinkIcon className="w-4 h-4" /> วางลิงก์รูปภาพ/วิดีโอ
+              <LinkIcon className="w-4 h-4" /> วางลิงก์รูปภาพ/วิดีโอ/เว็บ
             </label>
             <div className="flex gap-2">
               <input 
@@ -133,22 +191,40 @@ export const PromptGenMode: React.FC = () => {
           {/* File Upload */}
           <div className="space-y-2">
             <label className="text-xs font-black text-gray-500 uppercase tracking-widest flex items-center gap-2">
-              <PhotoIcon className="w-4 h-4" /> อัปโหลดไฟล์
+              <PhotoIcon className="w-4 h-4" />
+              <VideoCameraIcon className="w-4 h-4" />
+              อัปโหลดรูปภาพ/วิดีโอ
             </label>
-            {!media ? (
+            {!media && !urlContent ? (
               <div 
                 onClick={() => fileInputRef.current?.click()}
                 className="w-full aspect-video bg-card border-2 border-dashed border-border rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:border-[#0066ff]/50 hover:bg-[#0066ff]/5 transition-all group"
               >
-                <PhotoIcon className="w-8 h-8 text-gray-600 group-hover:text-[#0066ff] mb-2" />
-                <p className="text-xs font-bold text-gray-500">เลือกไฟล์สื่อ</p>
+                <div className="flex gap-2 mb-2">
+                  <PhotoIcon className="w-8 h-8 text-gray-600 group-hover:text-[#0066ff] transition-colors" />
+                  <VideoCameraIcon className="w-8 h-8 text-gray-600 group-hover:text-[#0066ff] transition-colors" />
+                </div>
+                <p className="text-xs font-bold text-gray-500">คลิกเพื่อเลือกไฟล์ (รูปภาพ หรือ วิดีโอ)</p>
+                <p className="text-[10px] text-gray-600 mt-1">รองรับ MP4, MOV, WebM, PNG, JPG, WebP</p>
+              </div>
+            ) : urlContent ? (
+              <div className="relative group aspect-video rounded-2xl overflow-hidden border border-border bg-[#0066ff]/10 flex flex-col items-center justify-center p-6 text-center">
+                <GlobeAltIcon className="w-12 h-12 text-[#0066ff] mb-3" />
+                <p className="text-sm font-bold text-white">ดึงข้อมูลจากลิงก์สำเร็จ</p>
+                <p className="text-[10px] text-gray-400 mt-1 truncate w-full px-4">{url}</p>
+                <button 
+                  onClick={clearAll}
+                  className="absolute top-2 right-2 p-2 bg-red-500/80 hover:bg-red-500 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <TrashIcon className="w-4 h-4" />
+                </button>
               </div>
             ) : (
               <div className="relative group aspect-video rounded-2xl overflow-hidden border border-border bg-black">
                 {mimeType.startsWith('video') ? (
-                  <video src={media} className="w-full h-full object-contain" controls />
+                  <video src={media!} className="w-full h-full object-contain" controls />
                 ) : (
-                  <img src={media} className="w-full h-full object-contain" alt="Preview" />
+                  <img src={media!} className="w-full h-full object-contain" alt="Preview" />
                 )}
                 <button 
                   onClick={clearAll}
@@ -163,9 +239,9 @@ export const PromptGenMode: React.FC = () => {
 
           <button
             onClick={handleAnalyze}
-            disabled={loading || !media}
+            disabled={loading || (!media && !urlContent)}
             className={`w-full py-4 rounded-xl font-black text-lg flex items-center justify-center gap-3 transition-all shadow-xl ${
-              loading || !media
+              loading || (!media && !urlContent)
                 ? 'bg-gray-800 text-gray-600 cursor-not-allowed'
                 : 'bg-[#0066ff] text-white hover:bg-[#0055dd] active:scale-95'
             }`}
