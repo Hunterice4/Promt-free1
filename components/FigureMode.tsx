@@ -1,13 +1,39 @@
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { generateFigureImage } from '../services/geminiService';
-import { PhotoIcon, SparklesIcon, TrashIcon, ArrowDownTrayIcon, PuzzlePieceIcon } from '@heroicons/react/24/solid';
+import { PhotoIcon, SparklesIcon, TrashIcon, ArrowDownTrayIcon, PuzzlePieceIcon, ClockIcon } from '@heroicons/react/24/solid';
 
 export const FigureMode: React.FC = () => {
   const [media, setMedia] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<string | null>(null);
+  const [history, setHistory] = useState<string[]>([]);
+  const [showHistory, setShowHistory] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const savedHistory = localStorage.getItem('figure_history');
+    if (savedHistory) {
+      try {
+        setHistory(JSON.parse(savedHistory));
+      } catch (e) {
+        console.error('Failed to parse figure history', e);
+      }
+    }
+  }, []);
+
+  const saveToHistory = (url: string) => {
+    const newHistory = [url, ...history.filter(h => h !== url)].slice(0, 20);
+    setHistory(newHistory);
+    localStorage.setItem('figure_history', JSON.stringify(newHistory));
+  };
+
+  const clearHistory = () => {
+    if (window.confirm('คุณต้องการลบประวัติการสร้างทั้งหมดใช่หรือไม่?')) {
+      setHistory([]);
+      localStorage.removeItem('figure_history');
+    }
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -27,6 +53,7 @@ export const FigureMode: React.FC = () => {
     try {
       const imageUrl = await generateFigureImage(media);
       setResult(imageUrl);
+      saveToHistory(imageUrl);
     } catch (error: any) {
       console.error(error);
       alert("เกิดข้อผิดพลาดในการสร้างฟิกเกอร์: " + error.message);
@@ -54,17 +81,71 @@ export const FigureMode: React.FC = () => {
     <div className="flex flex-col lg:flex-row w-full lg:h-full bg-background">
       {/* Input Section */}
       <div className="w-full lg:w-1/3 p-6 space-y-8 flex flex-col lg:h-full lg:overflow-y-auto bg-[#0a0a14] border-r border-border">
-        <div>
-          <h1 className="text-3xl font-black text-white mb-2 tracking-tight">
-            Figure <span className="text-[#0066ff]">Gen</span>
-          </h1>
-          <p className="text-gray-400 text-sm font-medium">
-            เปลี่ยนรูปภาพตัวละครให้เป็นฟิกเกอร์สุดพรีเมียม
-          </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-black text-white mb-2 tracking-tight">
+              Figure <span className="text-[#0066ff]">Gen</span>
+            </h1>
+            <p className="text-gray-400 text-sm font-medium">
+              เปลี่ยนรูปภาพตัวละครให้เป็นฟิกเกอร์สุดพรีเมียม
+            </p>
+          </div>
+          <button 
+            onClick={() => setShowHistory(!showHistory)}
+            className={`p-2 rounded-xl transition-all ${showHistory ? 'bg-[#0066ff] text-white' : 'bg-white/5 text-gray-500 hover:text-white hover:bg-white/10'}`}
+            title="ประวัติการสร้าง"
+          >
+            <ClockIcon className="w-6 h-6" />
+          </button>
         </div>
 
-        <div className="space-y-6">
-          <div className="space-y-2">
+        {showHistory ? (
+          <div className="space-y-4 animate-fade-in">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-black text-white flex items-center gap-2">
+                <ClockIcon className="w-5 h-5 text-[#0066ff]" /> ประวัติฟิกเกอร์
+              </h2>
+              {history.length > 0 && (
+                <button onClick={clearHistory} className="text-xs text-red-500 hover:underline flex items-center gap-1">
+                  <TrashIcon className="w-3 h-3" /> ล้างทั้งหมด
+                </button>
+              )}
+            </div>
+            
+            {history.length === 0 ? (
+              <div className="text-center py-12 bg-card rounded-2xl border border-border">
+                <p className="text-gray-500 text-sm">ยังไม่มีประวัติการสร้าง</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-3">
+                {history.map((url, i) => (
+                  <button 
+                    key={i}
+                    onClick={() => {
+                      setResult(url);
+                      setShowHistory(false);
+                    }}
+                    className="aspect-square rounded-xl overflow-hidden border border-border hover:border-[#0066ff] transition-all group relative"
+                  >
+                    <img src={url} className="w-full h-full object-cover" alt="History" />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <SparklesIcon className="w-6 h-6 text-white" />
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+            
+            <button 
+              onClick={() => setShowHistory(false)}
+              className="w-full py-3 rounded-xl font-bold bg-card border border-border text-gray-400 hover:text-white transition-all"
+            >
+              กลับไปหน้าสร้าง
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            <div className="space-y-2">
             <label className="text-xs font-black text-gray-500 uppercase tracking-[0.2em]">
               📸 อัปโหลดรูปตัวละคร (Character Image)
             </label>
@@ -131,6 +212,7 @@ export const FigureMode: React.FC = () => {
             )}
           </button>
         </div>
+        )}
       </div>
 
       {/* Output Section */}

@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { VisualStyle, CharacterData } from '../types';
 import { generateCharacter, generateImage, generateRandomConcept } from '../services/geminiService';
-import { SparklesIcon, UserIcon } from '@heroicons/react/24/solid';
+import { SparklesIcon, UserIcon, ClockIcon, TrashIcon } from '@heroicons/react/24/solid';
 import { ClipboardDocumentIcon } from '@heroicons/react/24/outline';
 import { Tooltip } from './Tooltip';
 
@@ -23,6 +23,32 @@ export const CharacterMode: React.FC = () => {
   const [isSuggesting, setIsSuggesting] = useState(false);
   const [loadingStatus, setLoadingStatus] = useState('');
   const [result, setResult] = useState<CharacterData | null>(null);
+  const [history, setHistory] = useState<CharacterData[]>([]);
+  const [showHistory, setShowHistory] = useState(false);
+
+  useEffect(() => {
+    const savedHistory = localStorage.getItem('character_history');
+    if (savedHistory) {
+      try {
+        setHistory(JSON.parse(savedHistory));
+      } catch (e) {
+        console.error('Failed to parse character history', e);
+      }
+    }
+  }, []);
+
+  const saveToHistory = (data: CharacterData) => {
+    const newHistory = [data, ...history.filter(h => h.name !== data.name)].slice(0, 20);
+    setHistory(newHistory);
+    localStorage.setItem('character_history', JSON.stringify(newHistory));
+  };
+
+  const clearHistory = () => {
+    if (window.confirm('คุณต้องการลบประวัติการสร้างทั้งหมดใช่หรือไม่?')) {
+      setHistory([]);
+      localStorage.removeItem('character_history');
+    }
+  };
 
   const skinTones = ['ผิวขาว', 'ผิวขาวเหลือง', 'ผิวสองสี', 'ผิวสีน้ำผึ้ง', 'ผิวเข้ม', 'ผิวแทน'];
   const hairStyles = ['ผมยาวสีดำ', 'ผมสั้นทรงนักเรียน', 'ผมบ๊อบ', 'ผมดัดลอน', 'ผมมัดหางม้า', 'ผมทรงสกินเฮด', 'ผมยาวสีทอง', 'ผมทรงโมฮอว์ก'];
@@ -68,6 +94,7 @@ export const CharacterMode: React.FC = () => {
       
       const skipImages = localStorage.getItem('skip_images') === 'true';
       if (skipImages) {
+        saveToHistory(data);
         setLoading(false);
         setLoadingStatus('');
         return;
@@ -75,7 +102,9 @@ export const CharacterMode: React.FC = () => {
 
       setLoadingStatus('กำลังวาดภาพตัวละคร...');
       const imageUrl = await generateImage(data.image_prompt);
-      setResult({ ...data, image_url: imageUrl });
+      const finalData = { ...data, image_url: imageUrl };
+      setResult(finalData);
+      saveToHistory(finalData);
     } catch (err: any) {
       console.error(err);
       let errorMessage = "เกิดข้อผิดพลาดในการสร้างตัวละคร";
@@ -103,13 +132,74 @@ export const CharacterMode: React.FC = () => {
       {/* Input Section */}
       <div className="w-full lg:w-1/3 p-6 space-y-6 bg-[#0a0a14] border-r border-border overflow-y-auto custom-scrollbar">
         <div>
-          <h1 className="text-3xl font-black text-white mb-2">Character <span className="text-[#0066ff]">Creator</span></h1>
+          <div className="flex items-center justify-between mb-2">
+            <h1 className="text-3xl font-black text-white">Character <span className="text-[#0066ff]">Creator</span></h1>
+            <button 
+              onClick={() => setShowHistory(!showHistory)}
+              className={`p-2 rounded-xl transition-all ${showHistory ? 'bg-[#0066ff] text-white' : 'bg-card text-gray-400 hover:text-white'}`}
+              title="ประวัติการสร้าง"
+            >
+              <ClockIcon className="w-6 h-6" />
+            </button>
+          </div>
           <p className="text-gray-400 text-sm">ออกแบบตัวละครสุดเท่ พร้อมประวัติและพลัง</p>
         </div>
         
-        <div className="space-y-6">
-          {/* Concept */}
-          <div>
+        {showHistory ? (
+          <div className="space-y-4 animate-fade-in">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-black text-white flex items-center gap-2">
+                <ClockIcon className="w-5 h-5 text-[#0066ff]" /> ประวัติการสร้าง
+              </h2>
+              {history.length > 0 && (
+                <button onClick={clearHistory} className="text-xs text-red-500 hover:underline flex items-center gap-1">
+                  <TrashIcon className="w-3 h-3" /> ล้างทั้งหมด
+                </button>
+              )}
+            </div>
+            
+            {history.length === 0 ? (
+              <div className="text-center py-12 bg-card rounded-2xl border border-border">
+                <p className="text-gray-500 text-sm">ยังไม่มีประวัติการสร้าง</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-3">
+                {history.map((h, i) => (
+                  <button 
+                    key={i}
+                    onClick={() => {
+                      setResult(h);
+                      setShowHistory(false);
+                    }}
+                    className="flex items-center gap-4 p-3 bg-card border border-border rounded-xl hover:border-[#0066ff] transition-all text-left group"
+                  >
+                    {h.image_url ? (
+                      <img src={h.image_url} alt={h.name} className="w-12 h-12 rounded-lg object-cover" />
+                    ) : (
+                      <div className="w-12 h-12 rounded-lg bg-gray-800 flex items-center justify-center">
+                        <UserIcon className="w-6 h-6 text-gray-600" />
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <h4 className="text-white font-bold text-sm truncate group-hover:text-[#0066ff] transition-colors">{h.name}</h4>
+                      <p className="text-gray-500 text-[10px] truncate">{h.title}</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+            
+            <button 
+              onClick={() => setShowHistory(false)}
+              className="w-full py-3 rounded-xl font-bold bg-card border border-border text-gray-400 hover:text-white transition-all"
+            >
+              กลับไปหน้าสร้าง
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {/* Concept */}
+            <div>
             <label className="text-xs font-black text-gray-500 uppercase flex items-center">
               💡 คอนเซปต์ตัวละคร
               <Tooltip content="ไอเดียหลักของตัวละคร เช่น นักรบมังกร, แฮกเกอร์ไซเบอร์พังค์" />
@@ -273,6 +363,7 @@ export const CharacterMode: React.FC = () => {
             </div>
           </div>
         </div>
+        )}
 
         <div className="pt-4 mt-auto space-y-4">
           <div className="px-2 py-3 bg-red-500/10 border border-red-500/20 rounded-xl mb-2">

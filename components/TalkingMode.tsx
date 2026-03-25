@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { generateTalkingVideo, getTalkingVideoPrompt } from '../services/geminiService';
+import { generateTalkingVideo, generateTalkingFaceDetailed, generateImage, TalkingFaceData, generateRandomFood } from '../services/geminiService';
 import { 
   PhotoIcon, 
   VideoCameraIcon, 
@@ -8,13 +8,16 @@ import {
   TrashIcon, 
   ArrowDownTrayIcon, 
   FaceSmileIcon,
-  ChatBubbleBottomCenterTextIcon,
   ArrowPathIcon,
   ExclamationTriangleIcon,
   KeyIcon,
   ClipboardDocumentIcon,
-  CheckIcon
+  CheckIcon,
+  ArrowRightIcon,
+  GiftIcon,
+  ClockIcon
 } from '@heroicons/react/24/solid';
+import { toast, Toaster } from 'sonner';
 
 const FACE_STYLES = [
   { id: 'Cute', name: 'น่ารัก (Cute)', icon: FaceSmileIcon },
@@ -25,15 +28,45 @@ const FACE_STYLES = [
 
 export const TalkingMode: React.FC = () => {
   const [media, setMedia] = useState<string | null>(null);
-  const [script, setScript] = useState('');
+  const [foodItem, setFoodItem] = useState('');
   const [faceStyle, setFaceStyle] = useState('Cute');
   const [loading, setLoading] = useState(false);
   const [videoLoading, setVideoLoading] = useState(false);
+  const [imageLoading, setImageLoading] = useState(false);
   const [result, setResult] = useState<string | null>(null);
-  const [generatedPrompt, setGeneratedPrompt] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
+  const [generatedData, setGeneratedData] = useState<TalkingFaceData | null>(null);
+  const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(null);
+  const [copied, setCopied] = useState<string | null>(null);
   const [hasPaidKey, setHasPaidKey] = useState<boolean | null>(null);
+  const [history, setHistory] = useState<{data: TalkingFaceData, imageUrl: string | null}[]>([]);
+  const [showHistory, setShowHistory] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const savedHistory = localStorage.getItem('talking_face_history');
+    if (savedHistory) {
+      try {
+        setHistory(JSON.parse(savedHistory));
+      } catch (e) {
+        console.error('Failed to parse talking face history', e);
+      }
+    }
+  }, []);
+
+  const saveToHistory = (data: TalkingFaceData, imageUrl: string | null) => {
+    setHistory(prev => {
+      const newHistory = [{data, imageUrl}, ...prev.filter(h => h.data.image_prompt !== data.image_prompt)].slice(0, 20);
+      localStorage.setItem('talking_face_history', JSON.stringify(newHistory));
+      return newHistory;
+    });
+  };
+
+  const clearHistory = () => {
+    if (window.confirm('คุณต้องการลบประวัติการสร้างทั้งหมดใช่หรือไม่?')) {
+      setHistory([]);
+      localStorage.removeItem('talking_face_history');
+    }
+  };
 
   useEffect(() => {
     const checkKey = async () => {
@@ -67,26 +100,76 @@ export const TalkingMode: React.FC = () => {
   };
 
   const handleGenerate = async () => {
-    if (!media || !script) return;
+    if (!foodItem && !media) {
+      toast.error('กรุณากรอกของกินหรืออัปโหลดรูปภาพ');
+      return;
+    }
     setLoading(true);
     try {
-      const prompt = getTalkingVideoPrompt(script, faceStyle);
-      setGeneratedPrompt(prompt);
+      const data = await generateTalkingFaceDetailed(faceStyle, media || undefined, foodItem);
+      setGeneratedData(data);
       setResult(null);
+      setGeneratedImageUrl(null);
+      
+      const skipImages = localStorage.getItem('skip_images') === 'true';
+      if (!skipImages) {
+        toast.info('กำลังสร้างรูปภาพโดยใช้รูปของคุณเป็นต้นแบบ...');
+        try {
+          const url = await generateImage(data.image_prompt, media || undefined);
+          setGeneratedImageUrl(url);
+          setMedia(url);
+          saveToHistory(data, url);
+          toast.success('สร้างรูปภาพสำเร็จ!');
+        } catch (imgErr) {
+          console.error("Image generation failed:", imgErr);
+          saveToHistory(data, null);
+          toast.error("สร้างรูปภาพไม่สำเร็จ แต่คุณยังสามารถก๊อปปี้ Prompt ไปเจนเองได้");
+        }
+      } else {
+        saveToHistory(data, null);
+        toast.success('สร้าง Prompt สำเร็จ! (ข้ามการสร้างรูปภาพตามที่ตั้งค่าไว้)');
+      }
     } catch (error: any) {
       console.error(error);
-      alert("เกิดข้อผิดพลาดในการสร้าง Prompt: " + error.message);
+      toast.error("เกิดข้อผิดพลาดในการสร้าง Prompt: " + error.message);
     } finally {
       setLoading(false);
     }
   };
 
+  const handleRandomFood = async () => {
+    const food = await generateRandomFood();
+    setFoodItem(food);
+    toast.success('สุ่มของกิน: ' + food);
+  };
+
+  const handleGenerateImage = async () => {
+    if (!generatedData) return;
+    setImageLoading(true);
+    try {
+      const url = await generateImage(generatedData.image_prompt, media || undefined);
+      setGeneratedImageUrl(url);
+      setMedia(url); // Set as current media so it can be used for video
+      saveToHistory(generatedData, url);
+      toast.success('สร้างรูปภาพสำเร็จ!');
+    } catch (error: any) {
+      console.error(error);
+      toast.error("เกิดข้อผิดพลาดในการสร้างรูปภาพ: " + error.message);
+    } finally {
+      setImageLoading(false);
+    }
+  };
+
   const handleGenerateVideo = async () => {
-    if (!media || !script) return;
+    if (!media || !generatedData) {
+      toast.error('กรุณามีรูปภาพและสร้าง Prompt ก่อน');
+      return;
+    }
     setVideoLoading(true);
     try {
-      const videoUrl = await generateTalkingVideo(script, media, faceStyle);
+      const videoUrl = await generateTalkingVideo(generatedData.video_prompt, media);
       setResult(videoUrl);
+      toast.success('สร้างวิดีโอสำเร็จ!');
     } catch (error: any) {
       console.error(error);
       if (error.message?.includes("PERMISSION_DENIED")) {
@@ -97,28 +180,28 @@ export const TalkingMode: React.FC = () => {
             setHasPaidKey(true);
           }
         } else {
-          alert(error.message);
+          toast.error(error.message);
         }
       } else {
-        alert("เกิดข้อผิดพลาดในการสร้างวิดีโอ: " + error.message);
+        toast.error("เกิดข้อผิดพลาดในการสร้างวิดีโอ: " + error.message);
       }
     } finally {
       setVideoLoading(false);
     }
   };
 
-  const handleCopy = () => {
-    if (generatedPrompt) {
-      navigator.clipboard.writeText(generatedPrompt);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }
+  const handleCopy = (text: string, id: string) => {
+    navigator.clipboard.writeText(text);
+    setCopied(id);
+    setTimeout(() => setCopied(null), 2000);
+    toast.success('คัดลอกแล้ว');
   };
 
   const clearMedia = () => {
     setMedia(null);
     setResult(null);
-    setGeneratedPrompt(null);
+    setGeneratedData(null);
+    setGeneratedImageUrl(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
@@ -133,18 +216,104 @@ export const TalkingMode: React.FC = () => {
 
   return (
     <div className="flex flex-col lg:flex-row w-full lg:h-full bg-background">
+      <Toaster position="top-center" richColors />
       {/* Input Section */}
       <div className="w-full lg:w-1/3 p-6 space-y-8 flex flex-col lg:h-full lg:overflow-y-auto bg-[#0a0a14] border-r border-border">
-        <div>
-          <h1 className="text-3xl font-black text-white mb-2 tracking-tight">
-            Talking <span className="text-[#0066ff]">Face</span>
-          </h1>
-          <p className="text-gray-400 text-sm font-medium">
-            ปลุกเสกสิ่งของ/อวัยวะ ให้พูดได้! (เทรน Viral)
-          </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-black text-white mb-2 tracking-tight">
+              Talking <span className="text-[#0066ff]">Face</span>
+            </h1>
+            <p className="text-gray-400 text-sm font-medium">
+              ปลุกเสกสิ่งของ/อวัยวะ ให้พูดได้! (เทรน Viral)
+            </p>
+          </div>
+          <button 
+            onClick={() => setShowHistory(!showHistory)}
+            className={`p-2 rounded-xl transition-all ${showHistory ? 'bg-[#0066ff] text-white' : 'bg-white/5 text-gray-500 hover:text-white hover:bg-white/10'}`}
+            title="ประวัติการสร้าง"
+          >
+            <ClockIcon className="w-6 h-6" />
+          </button>
         </div>
 
-        <div className="space-y-6">
+        {showHistory ? (
+          <div className="space-y-4 animate-fade-in">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-black text-white flex items-center gap-2">
+                <ClockIcon className="w-5 h-5 text-[#0066ff]" /> ประวัติหน้าพูดได้
+              </h2>
+              {history.length > 0 && (
+                <button onClick={clearHistory} className="text-xs text-red-500 hover:underline flex items-center gap-1">
+                  <TrashIcon className="w-3 h-3" /> ล้างทั้งหมด
+                </button>
+              )}
+            </div>
+            
+            {history.length === 0 ? (
+              <div className="text-center py-12 bg-card rounded-2xl border border-border">
+                <p className="text-gray-500 text-sm">ยังไม่มีประวัติการสร้าง</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-3">
+                {history.map((h, i) => (
+                  <button 
+                    key={i}
+                    onClick={() => {
+                      setGeneratedData(h.data);
+                      setGeneratedImageUrl(h.imageUrl);
+                      if (h.imageUrl) setMedia(h.imageUrl);
+                      setShowHistory(false);
+                    }}
+                    className="flex items-center gap-4 p-3 bg-card border border-border rounded-xl hover:border-[#0066ff] transition-all text-left group"
+                  >
+                    {h.imageUrl ? (
+                      <img src={h.imageUrl} alt="Talking Face" className="w-12 h-12 rounded-lg object-cover" />
+                    ) : (
+                      <div className="w-12 h-12 rounded-lg bg-gray-800 flex items-center justify-center">
+                        <FaceSmileIcon className="w-6 h-6 text-gray-600" />
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <h4 className="text-white font-bold text-sm truncate group-hover:text-[#0066ff] transition-colors">{h.data.image_prompt.substring(0, 30)}...</h4>
+                      <p className="text-gray-500 text-[10px] truncate">Talking Face Prompt</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+            
+            <button 
+              onClick={() => setShowHistory(false)}
+              className="w-full py-3 rounded-xl font-bold bg-card border border-border text-gray-400 hover:text-white transition-all"
+            >
+              กลับไปหน้าสร้าง
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {/* Food Item Input */}
+          <div className="space-y-2">
+            <label className="text-xs font-black text-gray-500 uppercase tracking-widest flex items-center justify-between">
+              <span className="flex items-center gap-2">
+                <GiftIcon className="w-4 h-4 text-[#0066ff]" /> ของกินที่ต้องการ (Food Item)
+              </span>
+              <button 
+                onClick={handleRandomFood}
+                className="text-[#0066ff] hover:underline flex items-center gap-1"
+              >
+                <ArrowPathIcon className="w-3 h-3" /> สุ่มออโต้
+              </button>
+            </label>
+            <input 
+              type="text"
+              value={foodItem}
+              onChange={(e) => setFoodItem(e.target.value)}
+              placeholder="เช่น ทุเรียน, พิซซ่า, มังคุด..."
+              className="w-full bg-card border border-border rounded-xl p-4 text-white text-sm focus:outline-none focus:border-[#0066ff]"
+            />
+          </div>
+
           {/* Media Upload */}
           <div className="space-y-2">
             <label className="text-xs font-black text-gray-500 uppercase tracking-widest">
@@ -170,19 +339,6 @@ export const TalkingMode: React.FC = () => {
               </div>
             )}
             <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
-          </div>
-
-          {/* Script Input */}
-          <div className="space-y-2">
-            <label className="text-xs font-black text-gray-500 uppercase tracking-widest flex items-center gap-2">
-              <ChatBubbleBottomCenterTextIcon className="w-4 h-4" /> บทพูด (Script)
-            </label>
-            <textarea 
-              value={script}
-              onChange={(e) => setScript(e.target.value)}
-              placeholder="พิมพ์สิ่งที่อยากให้มันพูด..."
-              className="w-full h-32 bg-card border border-border rounded-xl p-4 text-white text-sm focus:outline-none focus:border-[#0066ff] resize-none"
-            />
           </div>
 
           {/* Face Style */}
@@ -214,15 +370,15 @@ export const TalkingMode: React.FC = () => {
           </div>
           <button
             onClick={handleGenerate}
-            disabled={loading || !media || !script}
+            disabled={loading || (!foodItem && !media)}
             className={`w-full py-4 rounded-xl font-black text-lg flex items-center justify-center gap-3 transition-all shadow-xl ${
-              loading || !media || !script
+              loading || (!foodItem && !media)
                 ? 'bg-gray-800 text-gray-600 cursor-not-allowed'
                 : 'bg-[#0066ff] text-white hover:bg-[#0055dd] active:scale-95'
             }`}
           >
             {loading ? <ArrowPathIcon className="w-6 h-6 animate-spin" /> : <SparklesIcon className="w-6 h-6" />}
-            <span>{loading ? 'กำลังประมวลผล...' : 'สร้าง Prompt สำหรับวิดีโอ'}</span>
+            <span>{loading ? 'กำลังประมวลผล...' : 'สร้าง Prompt (รูปภาพ & วิดีโอ)'}</span>
           </button>
 
           {hasPaidKey === false && (
@@ -243,56 +399,84 @@ export const TalkingMode: React.FC = () => {
             </div>
           )}
         </div>
+        )}
       </div>
 
       {/* Output Section */}
       <div className="flex-1 bg-[#05050a] lg:h-full lg:overflow-y-auto p-8 flex flex-col items-center justify-center">
-        {!generatedPrompt && !result ? (
+        {!generatedData && !result ? (
           <div className="text-center space-y-6 opacity-50">
             <div className="w-32 h-32 bg-card rounded-full flex items-center justify-center border-2 border-dashed border-border mx-auto">
               <FaceSmileIcon className="w-16 h-16 text-gray-700" />
             </div>
             <h3 className="text-2xl font-bold text-gray-500">พร้อมปลุกเสกแล้ว</h3>
             <p className="text-gray-400 max-w-sm">
-              อัปโหลดรูปสิ่งของหรืออวัยวะของคุณ <br />แล้วใส่บทพูดที่ต้องการได้เลย!
+              อัปโหลดรูปสิ่งของหรืออวัยวะของคุณ <br />หรือพิมพ์ของกินที่ต้องการเพื่อสร้าง Prompt ใหม่ได้เลย!
             </p>
           </div>
         ) : (
           <div className="w-full max-w-2xl space-y-8 animate-fade-in flex flex-col items-center">
-            {/* Prompt Result */}
-            {generatedPrompt && (
-              <div className="w-full space-y-4">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-2xl font-black text-white uppercase tracking-tight">
-                    The <span className="text-[#0066ff]">Master Prompt</span>
-                  </h2>
-                  <button 
-                    onClick={handleCopy}
-                    className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all ${
-                      copied ? 'bg-green-500 text-white' : 'bg-[#0066ff]/10 text-[#0066ff] hover:bg-[#0066ff] hover:text-white'
-                    }`}
-                  >
-                    {copied ? <CheckIcon className="w-5 h-5" /> : <ClipboardDocumentIcon className="w-5 h-5" />}
-                    {copied ? 'คัดลอกแล้ว' : 'คัดลอก Prompt'}
-                  </button>
+            {/* Prompt Results */}
+            {generatedData && (
+              <div className="w-full space-y-8">
+                {/* Image Prompt */}
+                <div className="w-full space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-xl font-black text-white uppercase tracking-tight flex items-center gap-2">
+                      <PhotoIcon className="w-5 h-5 text-[#0066ff]" /> Image Prompt
+                    </h2>
+                    <div className="flex gap-2">
+                      <button 
+                        onClick={() => handleCopy(generatedData.image_prompt, 'image')}
+                        className={`p-2 rounded-lg transition-all ${
+                          copied === 'image' ? 'bg-green-500 text-white' : 'bg-white/5 text-gray-400 hover:text-white'
+                        }`}
+                      >
+                        {copied === 'image' ? <CheckIcon className="w-4 h-4" /> : <ClipboardDocumentIcon className="w-4 h-4" />}
+                      </button>
+                      <button 
+                        onClick={handleGenerateImage}
+                        disabled={imageLoading}
+                        className="flex items-center gap-2 px-4 py-2 rounded-lg font-bold bg-[#0066ff] text-white hover:bg-[#0055dd] transition-all disabled:opacity-50"
+                      >
+                        {imageLoading ? <ArrowPathIcon className="w-4 h-4 animate-spin" /> : <SparklesIcon className="w-4 h-4" />}
+                        {imageLoading ? 'กำลังเจนรูป...' : 'เจนรูปภาพ'}
+                      </button>
+                    </div>
+                  </div>
+                  <div className="bg-[#0a1125] border border-[#0066ff]/20 rounded-2xl p-4 text-gray-300 text-xs italic leading-relaxed">
+                    {generatedData.image_prompt}
+                  </div>
                 </div>
-                <div className="bg-[#0a1125] border border-[#0066ff]/40 rounded-3xl p-6 text-white text-sm leading-relaxed font-medium shadow-2xl">
-                  {generatedPrompt}
-                </div>
-                
-                <div className="flex flex-col md:flex-row gap-4">
-                  <button
-                    onClick={handleGenerateVideo}
-                    disabled={videoLoading || !media}
-                    className={`flex-1 py-4 rounded-xl font-black text-lg flex items-center justify-center gap-3 transition-all shadow-xl ${
-                      videoLoading || !media
-                        ? 'bg-gray-800 text-gray-600 cursor-not-allowed'
-                        : 'bg-white/5 border border-border text-white hover:bg-[#0066ff]/10 hover:border-[#0066ff]/50'
-                    }`}
-                  >
-                    {videoLoading ? <ArrowPathIcon className="w-6 h-6 animate-spin" /> : <VideoCameraIcon className="w-6 h-6" />}
-                    <span>{videoLoading ? 'กำลังเสกวิดีโอ...' : 'สร้างวิดีโอจริง (ต้องใช้ Paid Key)'}</span>
-                  </button>
+
+                {/* Video Prompt */}
+                <div className="w-full space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-xl font-black text-white uppercase tracking-tight flex items-center gap-2">
+                      <VideoCameraIcon className="w-5 h-5 text-purple-500" /> Video Prompt
+                    </h2>
+                    <div className="flex gap-2">
+                      <button 
+                        onClick={() => handleCopy(generatedData.video_prompt, 'video')}
+                        className={`p-2 rounded-lg transition-all ${
+                          copied === 'video' ? 'bg-green-500 text-white' : 'bg-white/5 text-gray-400 hover:text-white'
+                        }`}
+                      >
+                        {copied === 'video' ? <CheckIcon className="w-4 h-4" /> : <ClipboardDocumentIcon className="w-4 h-4" />}
+                      </button>
+                      <button 
+                        onClick={handleGenerateVideo}
+                        disabled={videoLoading || !media}
+                        className="flex items-center gap-2 px-4 py-2 rounded-lg font-bold bg-purple-600 text-white hover:bg-purple-700 transition-all disabled:opacity-50"
+                      >
+                        {videoLoading ? <ArrowPathIcon className="w-4 h-4 animate-spin" /> : <VideoCameraIcon className="w-4 h-4" />}
+                        {videoLoading ? 'กำลังเจนวิดีโอ...' : 'เจนวิดีโอ (Paid Key)'}
+                      </button>
+                    </div>
+                  </div>
+                  <div className="bg-[#1a0b25] border border-purple-500/20 rounded-2xl p-4 text-gray-300 text-xs italic leading-relaxed">
+                    {generatedData.video_prompt}
+                  </div>
                 </div>
               </div>
             )}

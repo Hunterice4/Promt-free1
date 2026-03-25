@@ -171,10 +171,11 @@ export const generateViralScript = async (params: GenerateParams): Promise<Viral
     case ScriptTemplate.Roast:
       templateInstruction = `
     Personality (สำคัญมาก):
-    - สิ่งของนี้ "มีชีวิต" และกำลัง "ด่า" หรือ "ขิง (Flex)" ใส่คนดู/เจ้าของ โดยตรง
-    - Tone of Voice: กวนประสาท (Sarcastic), ดุดัน (Aggressive), ขวานผ่าซาก, หลงตัวเองขั้นสุด
+    - สิ่งของนี้ "มีชีวิต" และกำลัง "จิกกัด" หรือ "ขิง (Flex)" ใส่คนดู/เจ้าของ โดยตรงแบบตลกๆ
+    - Tone of Voice: กวนประสาท (Sarcastic), ขี้เล่น (Playful), ขวานผ่าซาก, หลงตัวเองขั้นสุด
     - ภาษา: ต้องใช้คำแสลงวัยรุ่นไทย (Slang Thai) เพื่อความ Viral
-    - เนื้อหา: พูดถึงข้อดี/ข้อเสียของตัวเองแบบหลงตัวเอง หรือด่าคนใช้ที่ไม่ดูแลรักษา
+    - เนื้อหา: พูดถึงข้อดี/ข้อเสียของตัวเองแบบหลงตัวเอง หรือบ่นคนใช้ที่ไม่ดูแลรักษาแบบน่ารักๆ
+    - **ข้อห้ามเด็ดขาด**: ห้ามใช้คำหยาบคายรุนแรง (เช่น ไอ้สัส, เหี้ย, กู, มึง) ให้ใช้คำที่ดูซอฟต์แต่กวนประสาทแทน
       `;
       break;
     case ScriptTemplate.EpicReview:
@@ -216,10 +217,11 @@ export const generateViralScript = async (params: GenerateParams): Promise<Viral
     case ScriptTemplate.Savage:
       templateInstruction = `
     Personality (สำคัญมาก):
-    - สิ่งของนี้ "มีชีวิต" และกำลัง "ด่ากราด" หรือ "สาปแช่ง" ใส่คนดู/เจ้าของ แบบไม่เกรงใจใคร
-    - Tone of Voice: หยาบคาย (Vulgar), ก้าวร้าว (Aggressive), ไม่สนโลก, เดือดจัด
-    - ภาษา: ใช้คำหยาบแบบจัดเต็ม (เช่น กู, มึง, ไอ้สัส, เหี้ย) เพื่อความสะใจและ Viral
-    - เนื้อหา: ด่าพฤติกรรมแย่ๆ ของคนใช้ หรือด่าสังคมแบบตรงไปตรงมา
+    - สิ่งของนี้ "มีชีวิต" และกำลัง "วิจารณ์" หรือ "บ่น" ใส่คนดู/เจ้าของ แบบตรงไปตรงมาและดุดัน
+    - Tone of Voice: ดุดัน (Aggressive), ก้าวร้าวเล็กน้อย (Bold), ไม่สนโลก, เดือดจัดแบบตลก
+    - ภาษา: ใช้คำที่ดูแรงแต่ไม่หยาบคาย (เช่น แก, นาย, เรา, หรือคำแสลงที่กวนๆ)
+    - เนื้อหา: วิจารณ์พฤติกรรมแย่ๆ ของคนใช้ หรือบ่นสังคมแบบตรงไปตรงมา
+    - **ข้อห้ามเด็ดขาด**: ห้ามใช้คำหยาบคายรุนแรง (เช่น ไอ้สัส, เหี้ย, กู, มึง) ให้ใช้คำที่ดูดุดันแต่สุภาพกว่าแทน
       `;
       break;
     case ScriptTemplate.Conspiracy:
@@ -420,33 +422,93 @@ export const generateVideo = async (prompt: string, imageBase64: string): Promis
   });
 };
 
-export const getTalkingVideoPrompt = (script: string, faceStyle: string = 'Cute'): string => {
-  const stylePrompts: Record<string, string> = {
-    'Cute': "Add a pair of big, expressive, cute cartoon eyes and a small, adorable talking mouth to the object/part in this image. The face should be integrated naturally but look like a character. The mouth should move in sync with the script.",
-    'Funny': "Add goofy, bulging cartoon eyes and a large, hilarious talking mouth with visible teeth to the object/part. The expressions should be exaggerated and funny. The mouth should move wildly in sync with the script.",
-    'Realistic': "Add realistic human-like eyes and a detailed human mouth to the object/part, creating a surreal 'living object' effect. The integration should be seamless and slightly creepy but fascinating. The mouth should move realistically in sync with the script.",
-    'Angry': "Add sharp, angry cartoon eyes with furrowed brows and a shouting mouth to the object/part. The face should look very frustrated and aggressive. The mouth should move forcefully in sync with the script."
-  };
+const RANDOM_FOODS = [
+  "ทุเรียน (Durian)", "พิซซ่า (Pizza)", "มังคุด (Mangosteen)", "ซูชิ (Sushi)", 
+  "เบอร์เกอร์ (Burger)", "ไอศกรีม (Ice Cream)", "โดนัท (Donut)", "สเต็ก (Steak)",
+  "พาสต้า (Pasta)", "ติ่มซำ (Dim Sum)", "ทาโก้ (Taco)", "ครัวซองต์ (Croissant)",
+  "เค้กช็อกโกแลต (Chocolate Cake)", "ราเมน (Ramen)", "แพนเค้ก (Pancake)"
+];
 
-  const faceInstruction = stylePrompts[faceStyle] || stylePrompts['Cute'];
-
-  return `
-    ${faceInstruction}
-    
-    SCENE: The object/part in the provided image comes to life. 
-    ACTION: It is talking directly to the camera. Its eyes are blinking and looking around, and its mouth is moving perfectly in sync with this script: "${script}".
-    
-    VISUAL STYLE: Maintain the exact lighting, texture, and background of the original image. The added face should match the lighting of the scene. 
-    High-quality 3D animation, smooth motion, 4K resolution, photorealistic environment.
-  `.trim();
+export const generateRandomFood = async (): Promise<string> => {
+  const randomIndex = Math.floor(Math.random() * RANDOM_FOODS.length);
+  return RANDOM_FOODS[randomIndex];
 };
 
-export const generateTalkingVideo = async (script: string, imageBase64: string, faceStyle: string = 'Cute'): Promise<string> => {
+export interface TalkingFaceData {
+  image_prompt: string;
+  video_prompt: string;
+}
+
+export const generateTalkingFaceDetailed = async (faceStyle: string = 'Cute', imageBase64?: string, foodItem?: string): Promise<TalkingFaceData> => {
+  const apiKey = getEffectiveApiKey();
+  const ai = new GoogleGenAI({ apiKey });
+  const model = "gemini-3-flash-preview";
+
+  const contents: any[] = [];
+  if (imageBase64) {
+    contents.push({
+      inlineData: {
+        data: imageBase64.split(',')[1] || imageBase64,
+        mimeType: 'image/png'
+      }
+    });
+  }
+
+  const prompt = `
+    คุณคือ AI Prompt Engineer ผู้เชี่ยวชาญการสร้าง Prompt สำหรับ Image Generation และ Video Generation (Veo)
+    Task: สร้าง Prompt สำหรับ "Talking Object/Face" โดยใช้แม่แบบที่กำหนดให้ 100%
+    
+    วัตถุ/อาหารที่ต้องการ: ${foodItem || "สุ่มอาหารที่น่าสนใจ"}
+    
+    **กฎการสร้าง Prompt:**
+    1. **image_prompt**: ต้องใช้โครงสร้างนี้ 100% (แปลเป็นภาษาอังกฤษ):
+       "A tiny, adorable [FACE_DESCRIPTION] character seamlessly integrated into [FOOD_DESCRIPTION], making the [FOOD_NAME] itself look alive and irresistibly cute. The [FACE_FEATURES_DESCRIPTION]. The facial features are perfectly blended into the natural [FOOD_TEXTURE] texture of the [FOOD_NAME], not pasted on. The [FOOD_NAME] is held gently in the palm of a realistic human hand, centered in the frame. A second human hand is carefully feeding the character a small bite of the same [FOOD_NAME], with two fingers holding a tiny piece near the mouth. The character is actively biting the food, mouth slightly open, creating a wholesome, heart-melting moment. Ultra high detail, hyper-realistic 3D render style with warm cinematic lighting that matches the [FOOD_NAME]’s rich mood, rich realistic tones, shallow depth of field, clean blurred background, studio photography look. The [FOOD_NAME] texture is highly detailed and realistic, with visible [FOOD_SPECIFIC_DETAILS]. Natural human skin tones, soft shadows, gentle highlights. Cute, wholesome, cozy, Instagram-aesthetic, viral-style composition. Close-up macro shot, vertical framing (9:16), centered composition, no text, no watermark, no logo, no extra objects, no extra people."
+       
+       *หมายเหตุ:*
+       - ให้แทนที่ [FOOD_NAME], [FOOD_DESCRIPTION], [FOOD_TEXTURE], [FOOD_SPECIFIC_DETAILS] ให้เหมาะสมกับวัตถุที่เลือก
+       - **สำคัญมาก:** หากมีการแนบรูปภาพมา ให้วิเคราะห์ใบหน้าในรูปภาพและแทนที่ [FACE_DESCRIPTION] และ [FACE_FEATURES_DESCRIPTION] ด้วยคำบรรยายลักษณะเด่นของใบหน้าในรูปภาพนั้น (เช่น ทรงผม, ดวงตา, เอกลักษณ์เฉพาะตัว) เพื่อให้รูปที่เจนออกมามี "ความเหมือน" หรือ "เค้าโครง" ของคนในรูปมากที่สุด
+       - หากไม่มีรูปภาพ ให้ใช้คำบรรยาย "baby-faced" และ "face has big round glossy eyes, soft chubby cheeks, a small button nose, and a tiny open mouth with a joyful, innocent expression" ตามลำดับ
+
+    2. **video_prompt**: ต้องเป็นข้อความนี้เท่านั้น:
+       "Eating, cute, wholesome, close-up, vertical video"
+
+    Output ต้องเป็น JSON เท่านั้น:
+    {
+      "image_prompt": "...",
+      "video_prompt": "Eating, cute, wholesome, close-up, vertical video"
+    }
+  `;
+
+  contents.push({ text: prompt });
+
+  return callWithRetry(async () => {
+    const response = await ai.models.generateContent({
+      model,
+      contents,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            image_prompt: { type: Type.STRING },
+            video_prompt: { type: Type.STRING }
+          },
+          required: ["image_prompt", "video_prompt"]
+        }
+      }
+    });
+
+    if (response.text) {
+      return JSON.parse(response.text) as TalkingFaceData;
+    }
+    throw new Error("No response text generated");
+  });
+};
+
+export const generateTalkingVideo = async (prompt: string, imageBase64: string): Promise<string> => {
   const apiKey = getEffectiveApiKey();
   const ai = new GoogleGenAI({ apiKey });
   
-  const prompt = getTalkingVideoPrompt(script, faceStyle);
-
   return callWithRetry(async () => {
     const base64Data = imageBase64.split(',')[1] || imageBase64;
     
@@ -490,13 +552,24 @@ export const generateTalkingVideo = async (script: string, imageBase64: string, 
   });
 };
 
-export const generateImage = async (prompt: string): Promise<string> => {
+export const generateImage = async (prompt: string, referenceImageBase64?: string): Promise<string> => {
   const apiKey = getEffectiveApiKey();
   const ai = new GoogleGenAI({ apiKey });
   return callWithRetry(async () => {
+    const contents: any[] = [];
+    if (referenceImageBase64) {
+      contents.push({
+        inlineData: {
+          data: referenceImageBase64.split(',')[1] || referenceImageBase64,
+          mimeType: 'image/png'
+        }
+      });
+    }
+    contents.push({ text: prompt });
+
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash-image',
-      contents: [{ text: prompt }],
+      contents,
       config: {
         imageConfig: {
           aspectRatio: "9:16",
@@ -628,7 +701,7 @@ export const analyzeMediaToPrompt = async (mediaData: string, mimeType: string, 
   });
 };
 
-export const analyzeMediaToPromptDetailed = async (mediaData: string, mimeType: string, analysisMode: string = 'Standard'): Promise<DetailedPromptResult> => {
+export const analyzeMediaToPromptDetailed = async (mediaData: string, mimeType: string, analysisMode: string = 'Standard', backgroundOnly: boolean = false): Promise<DetailedPromptResult> => {
   const apiKey = getEffectiveApiKey();
   const ai = new GoogleGenAI({ apiKey });
   const model = "gemini-3-flash-preview";
@@ -648,14 +721,23 @@ export const analyzeMediaToPromptDetailed = async (mediaData: string, mimeType: 
     
     Your goal is to create a prompt that allows for 100% precise replication of the visual style, content, and atmosphere.
     
+    ${backgroundOnly ? "**BACKGROUND ONLY MODE:** Ignore any people, clothing, or foreground subjects. Focus 100% on the environment, architecture, lighting, weather, and background atmosphere. The generated prompt should describe ONLY the setting." : ""}
+
     **STYLE FOCUS:** ${modeInstruction}
 
     Pay extreme attention to:
+    ${backgroundOnly ? `
+    1. **Environment & Architecture**: Describe specific materials (concrete, wood, glass, etc.), textures, architectural styles, and background elements.
+    2. **Lighting & Atmosphere**: Precise lighting direction, color temperature, intensity, shadows, and atmospheric effects (haze, dust, bokeh, weather).
+    3. **Technical Specs**: Emulate professional photography/cinematography for landscape/architectural shots.
+    4. **Composition**: Rule of thirds, leading lines, framing, and depth of field in the context of a background scene.
+    ` : `
     1. **Clothing & Fashion**: Describe specific fabrics (silk, denim, leather, etc.), textures, patterns, stitching, fit, and how the clothing interacts with the body and light.
     2. **Physical Details**: Skin texture, pores, hair strands, eye reflections, and subtle facial expressions.
     3. **Environment & Lighting**: Precise lighting direction (e.g., 45-degree key light), color temperature (warm/cool), intensity, shadows, and atmospheric effects (haze, dust, bokeh).
     4. **Technical Specs**: Emulate professional photography/cinematography. Mention camera models (e.g., Sony A7R V, ARRI Alexa), lenses (e.g., 85mm f/1.2), and film stocks (e.g., Kodak Portra 400).
     5. **Composition**: Rule of thirds, leading lines, framing, and depth of field.
+    `}
 
     Return a JSON object with the following fields:
     - "title": A catchy, viral-style title for the content in Thai.
@@ -1051,26 +1133,31 @@ export const generateVlogTour = async (params: TourParams): Promise<TourData> =>
     Task: สร้างแผนการถ่ายทำ Vlog ท่องเที่ยว (Vlog Tour) โดยใช้ตัวละครเดิมในสถานที่ต่างๆ
     
     ข้อมูลเบื้องต้น:
-    - ตัวละคร (DNA): ${params.character_dna}
-    - สถานที่ที่ต้องการไป: ${params.locations}
-    - สไตล์ภาพ: ${params.style}
-    - โทนของ Vlog: ${params.tone}
-    ${params.referenceImage ? "- มีรูปภาพต้นแบบตัวละครแนบมาด้วย (Reference Image) ให้รักษาหน้าตาและลักษณะจากรูปนี้อย่างเคร่งครัด" : ""}
+    - ตัวละคร (DNA): \${params.character_dna}
+    - สถานที่ที่ต้องการไป: \${params.locations}
+    - สไตล์ภาพ: \${params.style}
+    - โทนของ Vlog: \${params.tone}
+    \${params.referenceImage ? "- มีรูปภาพต้นแบบตัวละครแนบมาด้วย (Reference Image) ให้รักษาหน้าตาและลักษณะจากรูปนี้อย่างเคร่งครัด" : ""}
 
     **กฎการสร้างเนื้อหา (Vlog Style):**
-    1. สร้างชื่อรายการ Vlog ที่น่าสนใจ
-    2. สร้างบทนำสั้นๆ (Introduction)
-    3. สร้างฉาก (Scenes) จำนวน ${params.sceneCount} ฉาก เพื่อให้เห็นการเดินทางที่ต่อเนื่อง
-    4. **Camera Angles & Actions (สำคัญมาก):** ต้องมีการสลับมุมกล้องแบบ Vlog จริงๆ เช่น:
+    1. สร้างชื่อรายการ Vlog ที่น่าสนใจและดึงดูดตามโทนที่เลือก (เช่น ถ้าโทนผี ให้ชื่อดูสยองขวัญ, ถ้าโทนผจญภัย ให้ชื่อดูตื่นเต้น)
+    2. สร้างบทนำสั้นๆ (Introduction) ที่ปูพื้นฐานอารมณ์ของทริปนี้
+    3. สร้างฉาก (Scenes) จำนวน \${params.sceneCount} ฉาก เพื่อให้เห็นการเดินทางที่ต่อเนื่องและมีเรื่องราว (Storytelling)
+    4. **การเล่าเรื่องตามแนว (Genre-specific Storytelling):**
+       - **แนวผี/สยองขวัญ (Ghost/Horror):** เน้นบรรยากาศมืดสลัว, มุมกล้องแอบมอง (Voyeuristic), เสียงกระซิบ, ตัวละครแสดงอาการหวาดกลัว, จังหวะตกใจ (Jump scare cues)
+       - **แนวผจญภัย (Adventure):** เน้นมุมกล้องกว้าง (Wide shots), การปีนป่าย, การสำรวจ, ตัวละครแสดงความมุ่งมั่นและตื่นตาตื่นใจ
+       - **แนว Vlog ทั่วไป:** เน้นความเป็นกันเอง, การพูดคุยกับกล้อง, การรีวิวสถานที่
+    5. **Camera Angles & Actions (สำคัญมาก):** ต้องมีการสลับมุมกล้องแบบ Vlog จริงๆ เช่น:
        - **Selfie Mode:** ตัวละครถือไม้เซลฟี่ (Selfie stick) เดินพูดกับกล้อง เห็นหน้าชัดเจนและฉากหลัง
        - **POV Mode:** มุมมองจากสายตาตัวละคร (Point of View) เห็นมือหรือสิ่งที่ตัวละครกำลังทำ/มอง
        - **Front-facing Camera:** กล้องตั้งอยู่ข้างหน้า ถ่ายเห็นตัวละครเดินเข้ามาหา หรือเดินผ่านกล้อง
        - **Switching Angles:** มีการสลับมุมกล้องจากหน้าไปหลัง หรือจากมุมกว้างไปมุมใกล้
-    5. แต่ละฉากต้องมี:
+    6. แต่ละฉากต้องมี:
        - location: ชื่อสถานที่
-       - action: การกระทำของตัวละครในฉากนั้น (บรรยายให้เห็นภาพการเคลื่อนไหว)
-       - image_prompt: Prompt ภาษาอังกฤษสำหรับเจนภาพนิ่ง (Master Frame) โดยต้องรวม [Master DNA] และ [Camera Angle/Action] เข้าด้วยกัน สไตล์ ${params.style} จบด้วย --ar 9:16
-       - video_prompt: Prompt ภาษาอังกฤษสำหรับเจนวิดีโอ (Video AI Prompt) บรรยายการเคลื่อนไหว (Movement), แสง (Lighting), และอารมณ์ (Atmosphere) ให้ละเอียดที่สุด เพื่อให้นำไปวางใน Luma/Runway แล้วได้คลิปที่สวยงาม
+       - action: การกระทำของตัวละครในฉากนั้น (บรรยายให้ละเอียดและเห็นภาพการเคลื่อนไหวที่ต่อเนื่อง)
+       - script: บทพูดที่ยาวขึ้นและมีอารมณ์ร่วม (Emotional Script) สำหรับคลิป 8 วินาที
+       - image_prompt: Prompt ภาษาอังกฤษสำหรับเจนภาพนิ่ง (Master Frame) โดยต้องรวม [Master DNA] และ [Camera Angle/Action] เข้าด้วยกัน สไตล์ \${params.style} จบด้วย --ar 9:16
+       - video_prompt: Prompt ภาษาอังกฤษสำหรับเจนวิดีโอ (Video AI Prompt) บรรยายการเคลื่อนไหว (Movement), แสง (Lighting), และอารมณ์ (Atmosphere) ให้ละเอียดที่สุด เพื่อให้นำไปวางใน Luma/Runway แล้วได้คลิปที่สวยงามและตรงตามแนวที่เลือก
 
     Output ต้องเป็น JSON เท่านั้น:
     {
@@ -1079,12 +1166,12 @@ export const generateVlogTour = async (params: TourParams): Promise<TourData> =>
       "scenes": [
         {
           "location": "ชื่อสถานที่",
-          "action": "การกระทำและมุมกล้อง (เช่น เดินถือเซลฟี่พูดกับกล้อง)",
-          "script": "บทพูดสั้นๆ",
-          "camera_movement": "การเคลื่อนกล้อง",
-          "duration_plan": "แผนเวลา 8 วินาที",
-          "vibe": "มู้ดของฉาก",
-          "sound_fx": "เสียงประกอบ",
+          "action": "การกระทำและมุมกล้องที่ละเอียด (เช่น เดินถือเซลฟี่พูดกับกล้องด้วยท่าทางตื่นเต้น พร้อมหันกล้องไปรอบๆ)",
+          "script": "บทพูดที่ยาวและมีอารมณ์ (สำหรับ 8 วินาที)",
+          "camera_movement": "การเคลื่อนกล้องที่ชัดเจน (เช่น Pan left to right, Zoom in slowly)",
+          "duration_plan": "แผนเวลา 8 วินาที (แบ่งเป็นช่วงๆ เช่น 0-3s พูด, 4-8s หันกล้อง)",
+          "vibe": "มู้ดของฉาก (เช่น ลึกลับ, สนุก, น่ากลัว)",
+          "sound_fx": "เสียงประกอบ (เช่น เสียงลมพัด, เสียงฝีเท้า, เสียงเพลงตื่นเต้น)",
           "image_prompt": "Detailed English Image Prompt with Master DNA and Camera Angle",
           "video_prompt": "Detailed English Video AI Prompt with movement and cinematic details"
         }

@@ -30,8 +30,8 @@ export enum VisualStyle {
 
 export enum CharacterEmotion {
   Angry = "โมโห",
-  Sarcastic = "ด่านิดๆ",
-  Vulgar = "หยาบดิบ (ด่ากราด)",
+  Sarcastic = "จิกกัด",
+  Vulgar = "ดุดัน (บ่นตรงๆ)",
   Cute = "น่ารัก",
   Professional = "มืออาชีพ",
   Depressed = "ซึมเศร้า/สิ้นหวัง",
@@ -40,8 +40,8 @@ export enum CharacterEmotion {
 }
 
 export enum ScriptTemplate {
-  Roast = "Roast Master (กวนประสาท/ด่า)",
-  Savage = "Savage (หยาบดิบ/ด่ากราด)",
+  Roast = "Roast Master (กวนประสาท/จิกกัด)",
+  Savage = "Savage (ดุดัน/บ่นตรงๆ)",
   EpicReview = "Epic Review (อวยยศ/เวอร์วัง)",
   SadStory = "Drama (เศร้า/เรียกน้ำตา)",
   Horror = "Horror (หลอน/สยองขวัญ)",

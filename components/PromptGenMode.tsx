@@ -29,6 +29,7 @@ export const PromptGenMode: React.FC = () => {
   const [result, setResult] = useState<DetailedPromptResult | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
   const [analysisMode, setAnalysisMode] = useState('Standard');
+  const [backgroundOnly, setBackgroundOnly] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -86,7 +87,7 @@ export const PromptGenMode: React.FC = () => {
       if (urlContent) {
         detailedResult = await analyzeUrlToPromptDetailed(urlContent);
       } else if (media) {
-        detailedResult = await analyzeMediaToPromptDetailed(media, mimeType, analysisMode);
+        detailedResult = await analyzeMediaToPromptDetailed(media, mimeType, analysisMode, backgroundOnly);
       }
       
       if (detailedResult) {
@@ -158,6 +159,31 @@ export const PromptGenMode: React.FC = () => {
                 </button>
               ))}
             </div>
+          </div>
+
+          {/* Background Only Toggle */}
+          <div className="space-y-2">
+            <button
+              onClick={() => setBackgroundOnly(!backgroundOnly)}
+              className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-xs font-black transition-all border ${
+                backgroundOnly
+                  ? 'bg-purple-500/20 border-purple-500 text-white shadow-lg shadow-purple-500/10'
+                  : 'bg-card border-border text-gray-400 hover:border-gray-600'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <div className={`p-1.5 rounded-lg ${backgroundOnly ? 'bg-purple-500 text-white' : 'bg-gray-800 text-gray-500'}`}>
+                  <GlobeAltIcon className="w-4 h-4" />
+                </div>
+                <span>วิเคราะห์พื้นหลังอย่างเดียว</span>
+              </div>
+              <div className={`w-10 h-5 rounded-full relative transition-colors ${backgroundOnly ? 'bg-purple-500' : 'bg-gray-700'}`}>
+                <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${backgroundOnly ? 'left-6' : 'left-1'}`} />
+              </div>
+            </button>
+            <p className="text-[10px] text-gray-500 italic px-1">
+              * AI จะข้ามการวิเคราะห์คนและเสื้อผ้า แล้วเน้นไปที่สภาพแวดล้อม แสง และบรรยากาศแทน
+            </p>
           </div>
 
           {/* URL Input */}

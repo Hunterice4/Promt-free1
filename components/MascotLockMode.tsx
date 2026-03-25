@@ -1,7 +1,7 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { VisualStyle, MascotParams, MascotData } from '../types';
 import { generateMascotDNA, generateMascotScene, generateImage } from '../services/geminiService';
-import { SparklesIcon, UserIcon, PhotoIcon, ClipboardDocumentIcon, ArrowRightIcon, CheckCircleIcon, BookOpenIcon } from '@heroicons/react/24/solid';
+import { SparklesIcon, UserIcon, PhotoIcon, ClipboardDocumentIcon, ArrowRightIcon, CheckCircleIcon, BookOpenIcon, ClockIcon, TrashIcon } from '@heroicons/react/24/solid';
 import { Tooltip } from './Tooltip';
 import { toast, Toaster } from 'sonner';
 import { PromptLibrary } from './PromptLibrary';
@@ -22,6 +22,32 @@ export const MascotLockMode: React.FC = () => {
   const [sceneAction, setSceneAction] = useState('');
   const [sceneResult, setSceneResult] = useState<{ prompt: string, url?: string } | null>(null);
   const [isLibraryOpen, setIsLibraryOpen] = useState(false);
+  const [history, setHistory] = useState<MascotData[]>([]);
+  const [showHistory, setShowHistory] = useState(false);
+
+  useEffect(() => {
+    const savedHistory = localStorage.getItem('mascot_history');
+    if (savedHistory) {
+      try {
+        setHistory(JSON.parse(savedHistory));
+      } catch (e) {
+        console.error('Failed to parse mascot history', e);
+      }
+    }
+  }, []);
+
+  const saveToHistory = (data: MascotData) => {
+    const newHistory = [data, ...history.filter(h => h.master_dna !== data.master_dna)].slice(0, 20);
+    setHistory(newHistory);
+    localStorage.setItem('mascot_history', JSON.stringify(newHistory));
+  };
+
+  const clearHistory = () => {
+    if (window.confirm('คุณต้องการลบประวัติการสร้างทั้งหมดใช่หรือไม่?')) {
+      setHistory([]);
+      localStorage.removeItem('mascot_history');
+    }
+  };
 
   const handleGenerateDNA = async () => {
     if (!dna.trim()) {
@@ -53,11 +79,14 @@ export const MascotLockMode: React.FC = () => {
       if (skipImages) {
         toast.info('ข้ามการสร้างรูปภาพตามที่ตั้งค่าไว้');
         setStep(3);
+        saveToHistory(mascotData);
         return;
       }
       const imageUrl = await generateImage(mascotData.character_sheet_prompt);
-      setMascotData({ ...mascotData, character_sheet_url: imageUrl });
+      const finalData = { ...mascotData, character_sheet_url: imageUrl };
+      setMascotData(finalData);
       setStep(3);
+      saveToHistory(finalData);
       toast.success('สร้าง Character Sheet สำเร็จ!');
     } catch (err: any) {
       console.error(err);
@@ -117,27 +146,90 @@ export const MascotLockMode: React.FC = () => {
               <p className="text-gray-400 text-[10px] uppercase font-bold tracking-widest">เทคนิคล็อกหน้า Mascot ถาวร</p>
             </div>
           </div>
-          <button 
-            onClick={() => setIsLibraryOpen(true)}
-            className="p-2 bg-white/5 hover:bg-white/10 rounded-xl transition-all group"
-            title="คลัง Prompt ตัวอย่าง"
-          >
-            <BookOpenIcon className="w-5 h-5 text-gray-500 group-hover:text-[#0066ff] transition-colors" />
-          </button>
+          <div className="flex gap-2">
+            <button 
+              onClick={() => setShowHistory(!showHistory)}
+              className={`p-2 rounded-xl transition-all ${showHistory ? 'bg-[#0066ff] text-white' : 'bg-white/5 text-gray-500 hover:text-white hover:bg-white/10'}`}
+              title="ประวัติการสร้าง"
+            >
+              <ClockIcon className="w-5 h-5" />
+            </button>
+            <button 
+              onClick={() => setIsLibraryOpen(true)}
+              className="p-2 bg-white/5 hover:bg-white/10 rounded-xl transition-all group"
+              title="คลัง Prompt ตัวอย่าง"
+            >
+              <BookOpenIcon className="w-5 h-5 text-gray-500 group-hover:text-[#0066ff] transition-colors" />
+            </button>
+          </div>
         </div>
 
         <PromptLibrary isOpen={isLibraryOpen} onClose={() => setIsLibraryOpen(false)} />
 
-        {/* Steps Indicator */}
-        <div className="flex items-center justify-between px-2 py-4 bg-card rounded-2xl border border-border">
-          <StepItem num={1} active={step >= 1} label="DNA" />
-          <div className={`h-px flex-1 mx-2 ${step > 1 ? 'bg-[#0066ff]' : 'bg-gray-700'}`} />
-          <StepItem num={2} active={step >= 2} label="Sheet" />
-          <div className={`h-px flex-1 mx-2 ${step > 2 ? 'bg-[#0066ff]' : 'bg-gray-700'}`} />
-          <StepItem num={3} active={step >= 3} label="Hybrid" />
-        </div>
+        {showHistory ? (
+          <div className="space-y-4 animate-fade-in">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-black text-white flex items-center gap-2">
+                <ClockIcon className="w-5 h-5 text-[#0066ff]" /> ประวัติ Mascot
+              </h2>
+              {history.length > 0 && (
+                <button onClick={clearHistory} className="text-xs text-red-500 hover:underline flex items-center gap-1">
+                  <TrashIcon className="w-3 h-3" /> ล้างทั้งหมด
+                </button>
+              )}
+            </div>
+            
+            {history.length === 0 ? (
+              <div className="text-center py-12 bg-card rounded-2xl border border-border">
+                <p className="text-gray-500 text-sm">ยังไม่มีประวัติการสร้าง</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-3">
+                {history.map((h, i) => (
+                  <button 
+                    key={i}
+                    onClick={() => {
+                      setMascotData(h);
+                      setStep(3);
+                      setShowHistory(false);
+                    }}
+                    className="flex items-center gap-4 p-3 bg-card border border-border rounded-xl hover:border-[#0066ff] transition-all text-left group"
+                  >
+                    {h.character_sheet_url ? (
+                      <img src={h.character_sheet_url} alt="Mascot" className="w-12 h-12 rounded-lg object-cover" />
+                    ) : (
+                      <div className="w-12 h-12 rounded-lg bg-gray-800 flex items-center justify-center">
+                        <UserIcon className="w-6 h-6 text-gray-600" />
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <h4 className="text-white font-bold text-sm truncate group-hover:text-[#0066ff] transition-colors">{h.master_dna}</h4>
+                      <p className="text-gray-500 text-[10px] truncate">Mascot DNA</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+            
+            <button 
+              onClick={() => setShowHistory(false)}
+              className="w-full py-3 rounded-xl font-bold bg-card border border-border text-gray-400 hover:text-white transition-all"
+            >
+              กลับไปหน้าสร้าง
+            </button>
+          </div>
+        ) : (
+          <>
+            {/* Steps Indicator */}
+            <div className="flex items-center justify-between px-2 py-4 bg-card rounded-2xl border border-border">
+              <StepItem num={1} active={step >= 1} label="DNA" />
+              <div className={`h-px flex-1 mx-2 ${step > 1 ? 'bg-[#0066ff]' : 'bg-gray-700'}`} />
+              <StepItem num={2} active={step >= 2} label="Sheet" />
+              <div className={`h-px flex-1 mx-2 ${step > 2 ? 'bg-[#0066ff]' : 'bg-gray-700'}`} />
+              <StepItem num={3} active={step >= 3} label="Hybrid" />
+            </div>
 
-        {step === 1 && (
+            {step === 1 && (
           <div className="space-y-4 animate-fade-in">
             <div className="p-4 bg-blue-500/5 border border-blue-500/20 rounded-xl">
               <p className="text-xs text-blue-400 leading-relaxed">
@@ -270,6 +362,8 @@ export const MascotLockMode: React.FC = () => {
               <button onClick={reset} className="w-full py-3 rounded-xl font-bold text-gray-500 hover:text-white transition-all text-sm">เริ่มสร้างตัวละครใหม่</button>
             </div>
           </div>
+        )}
+        </>
         )}
       </div>
 

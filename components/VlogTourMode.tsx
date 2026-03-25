@@ -147,6 +147,17 @@ export const VlogTourMode: React.FC = () => {
               placeholder="เช่น ตื่นเต้น, สนุกสนาน, ลึกลับ" 
               className="w-full bg-card border border-border rounded-xl p-4 text-white mt-2 focus:outline-none focus:border-[#0066ff]" 
             />
+            <div className="flex flex-wrap gap-2 mt-2">
+              {['ตื่นเต้น, สนุกสนาน', 'สยองขวัญ, ลึกลับ (Ghost)', 'ผจญภัย, ท้าทาย (Adventure)', 'โรแมนติก, อบอุ่น', 'ตลก, ร่าเริง'].map(t => (
+                <button 
+                  key={t}
+                  onClick={() => setTone(t)}
+                  className={`px-3 py-1.5 rounded-lg text-[10px] font-bold border transition-all ${tone === t ? 'bg-[#0066ff]/20 border-[#0066ff] text-white' : 'bg-card border-border text-gray-500 hover:text-white hover:border-gray-500'}`}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
           </div>
 
           <div>
@@ -235,44 +246,69 @@ export const VlogTourMode: React.FC = () => {
                       <span className="text-[10px] font-black text-white uppercase tracking-widest">Scene {idx + 1}</span>
                     </div>
                   </div>
-                  <div className="p-6 space-y-4">
-                    <div>
-                      <h3 className="text-xl font-black text-white flex items-center gap-2">
-                        <MapIcon className="w-5 h-5 text-[#0066ff]" /> {scene.location}
-                      </h3>
-                      <p className="text-sm text-gray-400 mt-1 font-bold">{scene.action}</p>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="bg-black/20 p-3 rounded-xl border border-white/5">
-                        <label className="text-[10px] font-black text-[#0066ff] uppercase block mb-1">🎥 Camera</label>
-                        <p className="text-[11px] text-gray-300 leading-tight">{scene.camera_movement}</p>
-                      </div>
-                      <div className="bg-black/20 p-3 rounded-xl border border-white/5">
-                        <label className="text-[10px] font-black text-[#0066ff] uppercase block mb-1">⏱️ Duration</label>
-                        <p className="text-[11px] text-gray-300 leading-tight">{scene.duration_plan}</p>
+                  <div className="p-6 space-y-5">
+                    <div className="flex justify-between items-start">
+                      <div className="space-y-1">
+                        <h3 className="text-xl font-black text-white flex items-center gap-2">
+                          <MapIcon className="w-5 h-5 text-[#0066ff]" /> {scene.location}
+                        </h3>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-black text-[#0066ff] uppercase bg-[#0066ff]/10 px-2 py-0.5 rounded-md">
+                            {scene.vibe}
+                          </span>
+                          <span className="text-[10px] font-bold text-gray-500 italic">
+                            {scene.duration_plan}
+                          </span>
+                        </div>
                       </div>
                     </div>
 
-                    <div className="bg-[#0066ff]/5 p-4 rounded-2xl border border-[#0066ff]/10">
-                      <label className="text-[10px] font-black text-[#0066ff] uppercase block mb-2 flex items-center gap-2">
-                        💬 Script (8s) <span className="text-[9px] font-normal text-gray-500">มู้ด: {scene.vibe}</span>
-                      </label>
-                      <p className="text-sm text-white font-medium leading-relaxed">"{scene.script}"</p>
+                    <div className="space-y-3">
+                      <div className="bg-white/5 p-4 rounded-2xl border border-white/5">
+                        <label className="text-[10px] font-black text-gray-500 uppercase block mb-2">🎬 Action & Movement</label>
+                        <p className="text-xs text-gray-300 leading-relaxed italic">{scene.action}</p>
+                        <div className="mt-2 pt-2 border-t border-white/5 flex items-center gap-2">
+                          <VideoCameraIcon className="w-3 h-3 text-purple-500" />
+                          <span className="text-[10px] text-purple-400 font-bold">{scene.camera_movement}</span>
+                        </div>
+                      </div>
+
+                      <div className="bg-[#0066ff]/5 p-5 rounded-2xl border border-[#0066ff]/10 relative overflow-hidden group/script">
+                        <div className="absolute top-0 right-0 p-2 opacity-10 group-hover/script:opacity-20 transition-opacity">
+                          <SparklesIcon className="w-8 h-8 text-[#0066ff]" />
+                        </div>
+                        <label className="text-[10px] font-black text-[#0066ff] uppercase block mb-2">💬 Script (Vlog Style)</label>
+                        <p className="text-sm text-white font-medium leading-relaxed relative z-10">"{scene.script}"</p>
+                        <div className="mt-3 flex items-center gap-2">
+                          <span className="text-[9px] text-gray-500 font-bold uppercase tracking-wider">Sound FX:</span>
+                          <span className="text-[9px] text-gray-400 italic">{scene.sound_fx}</span>
+                        </div>
+                      </div>
                     </div>
                     
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
-                        <label className="text-[10px] font-black text-gray-500 uppercase">Prompts</label>
-                        <button 
-                          onClick={() => {
-                            navigator.clipboard.writeText(scene.image_prompt);
-                            toast.success('คัดลอก Image Prompt แล้ว');
-                          }}
-                          className="text-[10px] text-[#0066ff] hover:underline flex items-center gap-1"
-                        >
-                          <ClipboardDocumentIcon className="w-3 h-3" /> Copy Image
-                        </button>
+                        <label className="text-[10px] font-black text-gray-500 uppercase">AI Prompts (Master DNA Locked)</label>
+                        <div className="flex gap-3">
+                          <button 
+                            onClick={() => {
+                              navigator.clipboard.writeText(scene.image_prompt);
+                              toast.success('คัดลอก Image Prompt แล้ว');
+                            }}
+                            className="text-[10px] text-[#0066ff] hover:underline flex items-center gap-1"
+                          >
+                            <ClipboardDocumentIcon className="w-3 h-3" /> Image
+                          </button>
+                          <button 
+                            onClick={() => {
+                              navigator.clipboard.writeText(scene.video_prompt);
+                              toast.success('คัดลอก Video Prompt แล้ว');
+                            }}
+                            className="text-[10px] text-purple-500 hover:underline flex items-center gap-1"
+                          >
+                            <ClipboardDocumentIcon className="w-3 h-3" /> Video
+                          </button>
+                        </div>
                       </div>
                       <div className="p-3 bg-black/40 rounded-xl border border-white/5 space-y-3">
                         <div className="flex items-start gap-2">
