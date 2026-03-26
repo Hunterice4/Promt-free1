@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
-import { VisualStyle, CharacterEmotion, ScriptTemplate, ScriptFramework } from '../types';
-import { SparklesIcon, FaceSmileIcon, PencilSquareIcon, DocumentTextIcon } from '@heroicons/react/24/solid';
+import { VisualStyle, CharacterEmotion, ScriptTemplate, ScriptFramework, VoiceGender, VoiceTone } from '../types';
+import { SparklesIcon, FaceSmileIcon, PencilSquareIcon, DocumentTextIcon, SpeakerWaveIcon } from '@heroicons/react/24/solid';
 
 interface InputSectionProps {
   objectName: string;
@@ -18,6 +18,12 @@ interface InputSectionProps {
   setStyle: (val: VisualStyle) => void;
   emotion: CharacterEmotion;
   setEmotion: (val: CharacterEmotion) => void;
+  enableVoiceover: boolean;
+  setEnableVoiceover: (val: boolean) => void;
+  voiceGender: VoiceGender;
+  setVoiceGender: (val: VoiceGender) => void;
+  voiceTone: VoiceTone;
+  setVoiceTone: (val: VoiceTone) => void;
   sceneCount: number;
   setSceneCount: (val: number) => void;
   skipImages: boolean;
@@ -53,6 +59,12 @@ export const InputSection: React.FC<InputSectionProps> = ({
   setStyle,
   emotion,
   setEmotion,
+  enableVoiceover,
+  setEnableVoiceover,
+  voiceGender,
+  setVoiceGender,
+  voiceTone,
+  setVoiceTone,
   sceneCount,
   setSceneCount,
   skipImages,
@@ -199,26 +211,79 @@ export const InputSection: React.FC<InputSectionProps> = ({
           </button>
         </div>
 
-        {/* Character Emotion Selection */}
-        <div className="space-y-3">
-          <label className="text-xs font-black text-gray-500 uppercase tracking-[0.2em] flex items-center gap-2">
-            <FaceSmileIcon className="w-4 h-4" /> อารมณ์ตัวละคร
-          </label>
-          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
-            {emotionOptions.map((opt) => (
-              <button
-                key={opt.type}
-                onClick={() => setEmotion(opt.type)}
-                className={`p-4 rounded-xl text-sm font-bold transition-all duration-300 border flex items-center gap-3 ${
-                  emotion === opt.type
-                    ? 'bg-[#0066ff]/10 border-[#0066ff] text-white blue-glow'
-                    : 'bg-card border-border text-gray-400 hover:border-gray-500 hover:text-white'
+        {/* Voice & Script Section */}
+        <div className="p-4 bg-[#11111a] border border-border rounded-xl space-y-6">
+          <div className="flex items-center justify-between">
+            <label className="text-xs font-black text-[#0066ff] uppercase tracking-[0.2em] flex items-center gap-2">
+              <SpeakerWaveIcon className="w-5 h-5" /> 🗣️ บทพูดและน้ำเสียง
+            </label>
+            <button
+              onClick={() => setEnableVoiceover(!enableVoiceover)}
+              className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none ${
+                enableVoiceover ? 'bg-[#0066ff]' : 'bg-gray-700'
+              }`}
+            >
+              <span
+                className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
+                  enableVoiceover ? 'translate-x-5' : 'translate-x-1'
                 }`}
-              >
-                <span className="text-xl">{opt.icon}</span>
-                <span>{opt.label}</span>
-              </button>
-            ))}
+              />
+            </button>
+          </div>
+
+          {enableVoiceover && (
+            <div className="space-y-4 animate-fade-in">
+              {/* Voice Gender & Tone */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold text-gray-500 uppercase">เสียงผู้พูด</label>
+                  <select
+                    value={voiceGender}
+                    onChange={(e) => setVoiceGender(e.target.value as VoiceGender)}
+                    className="w-full bg-card border border-border rounded-lg p-3 text-sm text-white focus:outline-none focus:border-[#0066ff] appearance-none cursor-pointer"
+                  >
+                    {Object.values(VoiceGender).map((g) => (
+                      <option key={g} value={g} className="bg-[#0a0a14] text-white">{g}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold text-gray-500 uppercase">โทนเสียง</label>
+                  <select
+                    value={voiceTone}
+                    onChange={(e) => setVoiceTone(e.target.value as VoiceTone)}
+                    className="w-full bg-card border border-border rounded-lg p-3 text-sm text-white focus:outline-none focus:border-[#0066ff] appearance-none cursor-pointer"
+                  >
+                    {Object.values(VoiceTone).map((t) => (
+                      <option key={t} value={t} className="bg-[#0a0a14] text-white">{t}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Character Emotion Selection */}
+          <div className="space-y-3 pt-4 border-t border-border/50">
+            <label className="text-[10px] font-bold text-gray-500 uppercase flex items-center gap-2">
+              <FaceSmileIcon className="w-3 h-3" /> อารมณ์ตัวละคร (Emotion)
+            </label>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+              {emotionOptions.map((opt) => (
+                <button
+                  key={opt.type}
+                  onClick={() => setEmotion(opt.type)}
+                  className={`p-2 rounded-lg text-xs font-bold transition-all duration-300 border flex flex-col items-center justify-center gap-1 ${
+                    emotion === opt.type
+                      ? 'bg-[#0066ff]/10 border-[#0066ff] text-white blue-glow'
+                      : 'bg-card border-border text-gray-400 hover:border-gray-500 hover:text-white'
+                  }`}
+                >
+                  <span className="text-lg">{opt.icon}</span>
+                  <span className="text-[9px]">{opt.label}</span>
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 

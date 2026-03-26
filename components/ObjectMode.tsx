@@ -2,7 +2,7 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { InputSection } from './InputSection';
 import { OutputSection } from './OutputSection';
 import { generateViralScript, generateRandomObject, generateImage } from '../services/geminiService';
-import { VisualStyle, ViralScript, CharacterEmotion, ScriptTemplate, ScriptFramework } from '../types';
+import { VisualStyle, ViralScript, CharacterEmotion, ScriptTemplate, ScriptFramework, VoiceGender, VoiceTone } from '../types';
 import { toast, Toaster } from 'sonner';
 
 export const ObjectMode: React.FC = () => {
@@ -13,6 +13,9 @@ export const ObjectMode: React.FC = () => {
   const [includeHeadline, setIncludeHeadline] = useState(true);
   const [style, setStyle] = useState<VisualStyle>(VisualStyle.ThreeD);
   const [emotion, setEmotion] = useState<CharacterEmotion>(CharacterEmotion.Angry);
+  const [enableVoiceover, setEnableVoiceover] = useState(true);
+  const [voiceGender, setVoiceGender] = useState<VoiceGender>(VoiceGender.Auto);
+  const [voiceTone, setVoiceTone] = useState<VoiceTone>(VoiceTone.Auto);
   const [sceneCount, setSceneCount] = useState(1);
   const [skipImages, setSkipImages] = useState(() => localStorage.getItem('skip_images') === 'true');
   const [loading, setLoading] = useState(false);
@@ -48,6 +51,9 @@ export const ObjectMode: React.FC = () => {
         includeHeadline,
         style,
         emotion,
+        enableVoiceover,
+        voiceGender,
+        voiceTone,
         sceneCount
       });
       
@@ -138,7 +144,7 @@ export const ObjectMode: React.FC = () => {
       setLoading(false);
       setLoadingStatus('');
     }
-  }, [objectName, additionalDetails, template, style, emotion, sceneCount]);
+  }, [objectName, additionalDetails, template, framework, includeHeadline, style, emotion, enableVoiceover, voiceGender, voiceTone, sceneCount, skipImages]);
 
   return (
     <div className="flex flex-col lg:flex-row w-full lg:h-full">
@@ -158,6 +164,12 @@ export const ObjectMode: React.FC = () => {
         setStyle={setStyle}
         emotion={emotion}
         setEmotion={setEmotion}
+        enableVoiceover={enableVoiceover}
+        setEnableVoiceover={setEnableVoiceover}
+        voiceGender={voiceGender}
+        setVoiceGender={setVoiceGender}
+        voiceTone={voiceTone}
+        setVoiceTone={setVoiceTone}
         sceneCount={sceneCount}
         setSceneCount={setSceneCount}
         skipImages={skipImages}

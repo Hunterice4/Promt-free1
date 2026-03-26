@@ -1,6 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { generateTalkingVideo, generateTalkingFaceDetailed, generateImage, TalkingFaceData, generateRandomFood } from '../services/geminiService';
+import { downloadImage } from '../services/downloadService';
 import { 
   PhotoIcon, 
   VideoCameraIcon, 
@@ -203,15 +204,6 @@ export const TalkingMode: React.FC = () => {
     setGeneratedData(null);
     setGeneratedImageUrl(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
-  };
-
-  const handleDownload = () => {
-    if (result) {
-      const link = document.createElement('a');
-      link.href = result;
-      link.download = 'talking-object.mp4';
-      link.click();
-    }
   };
 
   return (
@@ -489,7 +481,7 @@ export const TalkingMode: React.FC = () => {
                     Talking <span className="text-[#0066ff]">Result</span>
                   </h2>
                   <button 
-                    onClick={handleDownload}
+                    onClick={() => downloadImage(result, 'talking-face')}
                     className="flex items-center gap-2 px-6 py-3 rounded-xl font-bold bg-[#0066ff]/10 text-[#0066ff] hover:bg-[#0066ff] hover:text-white transition-all"
                   >
                     <ArrowDownTrayIcon className="w-5 h-5" />

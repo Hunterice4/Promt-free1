@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { VisualStyle, CharacterData } from '../types';
 import { generateCharacter, generateImage, generateRandomConcept } from '../services/geminiService';
-import { SparklesIcon, UserIcon, ClockIcon, TrashIcon } from '@heroicons/react/24/solid';
+import { SparklesIcon, UserIcon, ClockIcon, TrashIcon, ArrowDownTrayIcon } from '@heroicons/react/24/solid';
 import { ClipboardDocumentIcon } from '@heroicons/react/24/outline';
+import { downloadImage } from '../services/downloadService';
 import { Tooltip } from './Tooltip';
 
 export const CharacterMode: React.FC = () => {
@@ -411,15 +412,10 @@ export const CharacterMode: React.FC = () => {
               <div className="relative group/img w-full max-w-md mx-auto">
                 <img src={result.image_url} alt={result.name} className="w-full rounded-2xl shadow-2xl shadow-[#0066ff]/20 border border-white/10" />
                 <button 
-                  onClick={() => {
-                    const link = document.createElement('a');
-                    link.href = result.image_url!;
-                    link.download = `character-${result.name}.png`;
-                    link.click();
-                  }}
+                  onClick={() => downloadImage(result.image_url!, `character-${result.name}.png`)}
                   className="absolute inset-0 bg-black/60 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center text-white font-bold text-sm gap-2 rounded-2xl"
                 >
-                  <ClipboardDocumentIcon className="w-6 h-6" /> Download Image
+                  <ArrowDownTrayIcon className="w-6 h-6" /> Download Image
                 </button>
               </div>
             ) : (

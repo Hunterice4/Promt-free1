@@ -10,11 +10,12 @@ import { MovieSetMode } from './components/MovieSetMode';
 import { TalkingMode } from './components/TalkingMode';
 import { PromptGenMode } from './components/PromptGenMode';
 import { VlogTourMode } from './components/VlogTourMode';
+import { CrossoverMode } from './components/CrossoverMode';
 import { setCustomApiKey } from './services/geminiService';
-import { CubeIcon, UserIcon, BookOpenIcon, Cog6ToothIcon, XMarkIcon, KeyIcon, PhotoIcon, EyeIcon, PuzzlePieceIcon, FaceSmileIcon, SparklesIcon, HashtagIcon, VideoCameraIcon, MapIcon } from '@heroicons/react/24/solid';
+import { CubeIcon, UserIcon, BookOpenIcon, Cog6ToothIcon, XMarkIcon, KeyIcon, PhotoIcon, EyeIcon, PuzzlePieceIcon, FaceSmileIcon, SparklesIcon, HashtagIcon, VideoCameraIcon, MapIcon, UserGroupIcon } from '@heroicons/react/24/solid';
 
 const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'object' | 'character' | 'mascot' | 'story' | 'vision' | 'figure' | 'talking' | 'movie' | 'promptgen' | 'vlogtour'>('object');
+  const [activeTab, setActiveTab] = useState<'object' | 'character' | 'mascot' | 'story' | 'vision' | 'figure' | 'talking' | 'movie' | 'promptgen' | 'vlogtour' | 'crossover'>('object');
   const [showSettings, setShowSettings] = useState(false);
   const [apiKey, setApiKey] = useState(localStorage.getItem('gemini_api_key') || '');
   const [skipImages, setSkipImages] = useState(localStorage.getItem('skip_images') === 'true');
@@ -89,89 +90,141 @@ const App: React.FC = () => {
   return (
     <div className="flex flex-col h-screen w-full bg-background overflow-hidden">
       {/* Top Navigation Bar */}
-      <div className="h-16 lg:h-20 bg-[#0a0a14] border-b border-border flex items-center px-4 lg:px-8 z-50 shrink-0 justify-between">
-        <div className="flex items-center gap-4 lg:gap-8">
-          <div className="text-[#0066ff] font-black text-xl lg:text-2xl tracking-tighter">ROAST MASTER</div>
+      <div className="h-20 lg:h-24 bg-[#0a0a14] border-b border-border flex items-center px-4 lg:px-8 z-50 shrink-0 justify-between overflow-x-auto no-scrollbar">
+        <div className="flex items-center gap-6 lg:gap-10">
+          <div className="text-[#0066ff] font-black text-xl lg:text-2xl tracking-tighter shrink-0">ROAST MASTER</div>
           
-          <nav className="hidden md:flex items-center gap-1">
-            <TabButton 
-              active={activeTab === 'object'} 
-              onClick={() => setActiveTab('object')} 
-              icon={<CubeIcon className="w-5 h-5" />} 
-              label="ปลุกเสกสิ่งของ" 
-            />
-            <TabButton 
-              active={activeTab === 'character'} 
-              onClick={() => setActiveTab('character')} 
-              icon={<UserIcon className="w-5 h-5" />} 
-              label="สร้างตัวละคร" 
-            />
-            <TabButton 
-              active={activeTab === 'mascot'} 
-              onClick={() => setActiveTab('mascot')} 
-              icon={<UserIcon className="w-5 h-5 text-yellow-500" />} 
-              label="Mascot ล็อกหน้า" 
-            />
-            <TabButton 
-              active={activeTab === 'story'} 
-              onClick={() => setActiveTab('story')} 
-              icon={<BookOpenIcon className="w-5 h-5" />} 
-              label="แต่งเนื้อเรื่อง" 
-            />
-            <TabButton 
-              active={activeTab === 'vlogtour'} 
-              onClick={() => setActiveTab('vlogtour')} 
-              icon={<MapIcon className="w-5 h-5 text-[#00aaff]" />} 
-              label="Vlog Tour" 
-            />
-            <TabButton 
-              active={activeTab === 'vision'} 
-              onClick={() => setActiveTab('vision')} 
-              icon={<div className="flex -space-x-1"><PhotoIcon className="w-4 h-4" /><VideoCameraIcon className="w-4 h-4" /></div>} 
-              label="แกะ Prompt (รูป/วิดีโอ)" 
-            />
-            <TabButton 
-              active={activeTab === 'figure'} 
-              onClick={() => setActiveTab('figure')} 
-              icon={<PuzzlePieceIcon className="w-5 h-5" />} 
-              label="เจนฟิกเกอร์" 
-            />
-            <TabButton 
-              active={activeTab === 'movie'} 
-              onClick={() => setActiveTab('movie')} 
-              icon={<SparklesIcon className="w-5 h-5" />} 
-              label="Abandoned Movie" 
-            />
-            <TabButton 
-              active={activeTab === 'promptgen'} 
-              onClick={() => setActiveTab('promptgen')} 
-              icon={<div className="flex -space-x-1"><PhotoIcon className="w-4 h-4" /><VideoCameraIcon className="w-4 h-4" /></div>} 
-              label="Image/Video to Prompt" 
-            />
-            <TabButton 
-              active={activeTab === 'talking'} 
-              onClick={() => setActiveTab('talking')} 
-              icon={<FaceSmileIcon className="w-5 h-5" />} 
-              label="หน้าพูดได้" 
-            />
+          <nav className="hidden md:flex items-center gap-6">
+            {/* Group: Featured */}
+            <div className="flex flex-col gap-1.5">
+              <span className="text-[9px] font-black text-[#00aaff] uppercase tracking-[0.2em] px-2 opacity-80">Featured</span>
+              <div className="flex items-center gap-1">
+                <TabButton 
+                  active={activeTab === 'crossover'} 
+                  onClick={() => setActiveTab('crossover')} 
+                  icon={<UserGroupIcon className="w-4 h-4 text-[#00aaff]" />} 
+                  label="Crossover Gen" 
+                  isNew
+                />
+                <TabButton 
+                  active={activeTab === 'vlogtour'} 
+                  onClick={() => setActiveTab('vlogtour')} 
+                  icon={<MapIcon className="w-4 h-4 text-[#00aaff]" />} 
+                  label="Vlog Tour" 
+                />
+              </div>
+            </div>
+
+            <div className="w-px h-10 bg-border/50" />
+
+            {/* Group: Creation */}
+            <div className="flex flex-col gap-1.5">
+              <span className="text-[9px] font-black text-purple-500 uppercase tracking-[0.2em] px-2 opacity-80">Creation</span>
+              <div className="flex items-center gap-1">
+                <TabButton 
+                  active={activeTab === 'object'} 
+                  onClick={() => setActiveTab('object')} 
+                  icon={<CubeIcon className="w-4 h-4" />} 
+                  label="ปลุกเสกสิ่งของ" 
+                />
+                <TabButton 
+                  active={activeTab === 'story'} 
+                  onClick={() => setActiveTab('story')} 
+                  icon={<BookOpenIcon className="w-4 h-4" />} 
+                  label="แต่งเนื้อเรื่อง" 
+                />
+                <TabButton 
+                  active={activeTab === 'movie'} 
+                  onClick={() => setActiveTab('movie')} 
+                  icon={<SparklesIcon className="w-4 h-4" />} 
+                  label="Abandoned Movie" 
+                />
+              </div>
+            </div>
+
+            <div className="w-px h-10 bg-border/50" />
+
+            {/* Group: Character */}
+            <div className="flex flex-col gap-1.5">
+              <span className="text-[9px] font-black text-yellow-500 uppercase tracking-[0.2em] px-2 opacity-80">Character</span>
+              <div className="flex items-center gap-1">
+                <TabButton 
+                  active={activeTab === 'character'} 
+                  onClick={() => setActiveTab('character')} 
+                  icon={<UserIcon className="w-4 h-4" />} 
+                  label="สร้างตัวละคร" 
+                />
+                <TabButton 
+                  active={activeTab === 'mascot'} 
+                  onClick={() => setActiveTab('mascot')} 
+                  icon={<UserIcon className="w-4 h-4 text-yellow-500" />} 
+                  label="Mascot" 
+                />
+                <TabButton 
+                  active={activeTab === 'talking'} 
+                  onClick={() => setActiveTab('talking')} 
+                  icon={<FaceSmileIcon className="w-4 h-4" />} 
+                  label="หน้าพูดได้" 
+                />
+                <TabButton 
+                  active={activeTab === 'figure'} 
+                  onClick={() => setActiveTab('figure')} 
+                  icon={<PuzzlePieceIcon className="w-4 h-4" />} 
+                  label="เจนฟิกเกอร์" 
+                />
+              </div>
+            </div>
+
+            <div className="w-px h-10 bg-border/50" />
+
+            {/* Group: Analysis */}
+            <div className="flex flex-col gap-1.5">
+              <span className="text-[9px] font-black text-green-500 uppercase tracking-[0.2em] px-2 opacity-80">Vision & Prompt</span>
+              <div className="flex items-center gap-1">
+                <TabButton 
+                  active={activeTab === 'vision'} 
+                  onClick={() => setActiveTab('vision')} 
+                  icon={<EyeIcon className="w-4 h-4" />} 
+                  label="แกะ Prompt" 
+                />
+                <TabButton 
+                  active={activeTab === 'promptgen'} 
+                  onClick={() => setActiveTab('promptgen')} 
+                  icon={<HashtagIcon className="w-4 h-4" />} 
+                  label="Prompt Gen" 
+                />
+              </div>
+            </div>
           </nav>
         </div>
 
-        <div className="flex items-center gap-2">
-          {/* Mobile Menu (Simplified for now) */}
-          <div className="md:hidden flex items-center gap-1 overflow-x-auto max-w-[200px] no-scrollbar">
-             <button onClick={() => setActiveTab('object')} className={`p-2 rounded-lg ${activeTab === 'object' ? 'text-[#0066ff]' : 'text-gray-500'}`}><CubeIcon className="w-5 h-5" /></button>
-             <button onClick={() => setActiveTab('vlogtour')} className={`p-2 rounded-lg ${activeTab === 'vlogtour' ? 'text-[#00aaff]' : 'text-gray-500'}`}><MapIcon className="w-5 h-5" /></button>
-             <button onClick={() => setActiveTab('mascot')} className={`p-2 rounded-lg ${activeTab === 'mascot' ? 'text-yellow-500' : 'text-gray-500'}`}><UserIcon className="w-5 h-5" /></button>
-             <button onClick={() => setActiveTab('promptgen')} className={`p-2 rounded-lg ${activeTab === 'promptgen' ? 'text-[#0066ff]' : 'text-gray-500'}`}><HashtagIcon className="w-5 h-5" /></button>
-             <button onClick={() => setActiveTab('figure')} className={`p-2 rounded-lg ${activeTab === 'figure' ? 'text-[#0066ff]' : 'text-gray-500'}`}><PuzzlePieceIcon className="w-5 h-5" /></button>
-             <button onClick={() => setActiveTab('movie')} className={`p-2 rounded-lg ${activeTab === 'movie' ? 'text-[#0066ff]' : 'text-gray-500'}`}><SparklesIcon className="w-5 h-5" /></button>
-             <button onClick={() => setActiveTab('talking')} className={`p-2 rounded-lg ${activeTab === 'talking' ? 'text-[#0066ff]' : 'text-gray-500'}`}><FaceSmileIcon className="w-5 h-5" /></button>
+        <div className="flex items-center gap-1 ml-auto shrink-0">
+          {/* Mobile Menu (Grouped) */}
+          <div className="md:hidden flex items-center gap-2 overflow-x-auto no-scrollbar max-w-[180px] sm:max-w-[250px] py-1 border-r border-border/30 pr-2 mr-1">
+             <div className="flex items-center gap-1 px-1 border-r border-border/30">
+                <button onClick={() => setActiveTab('crossover')} className={`p-2 rounded-lg transition-all ${activeTab === 'crossover' ? 'bg-[#00aaff]/10 text-[#00aaff]' : 'text-gray-500'}`} title="Crossover Gen"><UserGroupIcon className="w-5 h-5" /></button>
+                <button onClick={() => setActiveTab('vlogtour')} className={`p-2 rounded-lg transition-all ${activeTab === 'vlogtour' ? 'bg-[#00aaff]/10 text-[#00aaff]' : 'text-gray-500'}`} title="Vlog Tour"><MapIcon className="w-5 h-5" /></button>
+             </div>
+             <div className="flex items-center gap-1 px-1 border-r border-border/30">
+                <button onClick={() => setActiveTab('object')} className={`p-2 rounded-lg transition-all ${activeTab === 'object' ? 'bg-[#0066ff]/10 text-[#0066ff]' : 'text-gray-500'}`} title="ปลุกเสกสิ่งของ"><CubeIcon className="w-5 h-5" /></button>
+                <button onClick={() => setActiveTab('story')} className={`p-2 rounded-lg transition-all ${activeTab === 'story' ? 'bg-[#0066ff]/10 text-[#0066ff]' : 'text-gray-500'}`} title="แต่งเนื้อเรื่อง"><BookOpenIcon className="w-5 h-5" /></button>
+                <button onClick={() => setActiveTab('movie')} className={`p-2 rounded-lg transition-all ${activeTab === 'movie' ? 'bg-[#0066ff]/10 text-[#0066ff]' : 'text-gray-500'}`} title="Abandoned Movie"><SparklesIcon className="w-5 h-5" /></button>
+             </div>
+             <div className="flex items-center gap-1 px-1 border-r border-border/30">
+                <button onClick={() => setActiveTab('character')} className={`p-2 rounded-lg transition-all ${activeTab === 'character' ? 'bg-[#0066ff]/10 text-[#0066ff]' : 'text-gray-500'}`} title="สร้างตัวละคร"><UserIcon className="w-5 h-5" /></button>
+                <button onClick={() => setActiveTab('mascot')} className={`p-2 rounded-lg transition-all ${activeTab === 'mascot' ? 'bg-yellow-500/10 text-yellow-500' : 'text-gray-500'}`} title="Mascot"><UserIcon className="w-5 h-5" /></button>
+                <button onClick={() => setActiveTab('talking')} className={`p-2 rounded-lg transition-all ${activeTab === 'talking' ? 'bg-[#0066ff]/10 text-[#0066ff]' : 'text-gray-500'}`} title="หน้าพูดได้"><FaceSmileIcon className="w-5 h-5" /></button>
+                <button onClick={() => setActiveTab('figure')} className={`p-2 rounded-lg transition-all ${activeTab === 'figure' ? 'bg-[#0066ff]/10 text-[#0066ff]' : 'text-gray-500'}`} title="เจนฟิกเกอร์"><PuzzlePieceIcon className="w-5 h-5" /></button>
+             </div>
+             <div className="flex items-center gap-1 px-1">
+                <button onClick={() => setActiveTab('vision')} className={`p-2 rounded-lg transition-all ${activeTab === 'vision' ? 'bg-green-500/10 text-green-500' : 'text-gray-500'}`} title="แกะ Prompt"><EyeIcon className="w-5 h-5" /></button>
+                <button onClick={() => setActiveTab('promptgen')} className={`p-2 rounded-lg transition-all ${activeTab === 'promptgen' ? 'bg-green-500/10 text-green-500' : 'text-gray-500'}`} title="Prompt Gen"><HashtagIcon className="w-5 h-5" /></button>
+             </div>
           </div>
 
           <button 
             onClick={() => setShowSettings(true)}
-            className="p-3 rounded-xl text-gray-500 hover:text-white hover:bg-white/5 transition-all"
+            className="p-2 lg:p-3 rounded-xl text-gray-500 hover:text-white hover:bg-white/5 transition-all shrink-0"
             title="ตั้งค่า"
           >
             <Cog6ToothIcon className="w-6 h-6" />
@@ -281,22 +334,29 @@ const App: React.FC = () => {
         {activeTab === 'talking' && <TalkingMode />}
         {activeTab === 'promptgen' && <PromptGenMode />}
         {activeTab === 'vlogtour' && <VlogTourMode />}
+        {activeTab === 'crossover' && <CrossoverMode />}
       </div>
     </div>
   );
 };
 
-const TabButton = ({ active, onClick, icon, label }: { active: boolean, onClick: () => void, icon: React.ReactNode, label: string }) => (
+const TabButton = ({ active, onClick, icon, label, isNew }: { active: boolean, onClick: () => void, icon: React.ReactNode, label: string, isNew?: boolean }) => (
   <button 
     onClick={onClick}
-    className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm transition-all ${
+    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg font-bold text-[11px] transition-all relative shrink-0 ${
       active 
-        ? 'bg-[#0066ff]/10 text-[#0066ff]' 
+        ? 'bg-[#0066ff] text-white shadow-lg shadow-[#0066ff]/20' 
         : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'
     }`}
   >
     {icon}
-    <span>{label}</span>
+    <span className="whitespace-nowrap">{label}</span>
+    {isNew && (
+      <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
+        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
+      </span>
+    )}
   </button>
 );
 

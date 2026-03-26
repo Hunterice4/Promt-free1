@@ -16,6 +16,7 @@ import {
   ExclamationTriangleIcon,
   KeyIcon
 } from '@heroicons/react/24/solid';
+import { downloadImage } from '../services/downloadService';
 
 const ANALYSIS_MODES = [
   { id: 'Standard', name: 'มาตรฐาน', icon: SparklesIcon },
@@ -361,13 +362,12 @@ export const VisionMode: React.FC = () => {
               <div className="space-y-4 animate-scale-in">
                 <div className="flex items-center justify-between">
                   <h3 className="text-xl font-bold text-white">ผลลัพธ์การสร้าง</h3>
-                  <a 
-                    href={genResult.url} 
-                    download={`generated-${genResult.type}`}
+                  <button 
+                    onClick={() => downloadImage(genResult.url, `generated-${genResult.type}.png`)}
                     className="flex items-center gap-2 text-[#0066ff] hover:underline text-sm font-bold"
                   >
                     <ArrowDownTrayIcon className="w-4 h-4" /> ดาวน์โหลด
-                  </a>
+                  </button>
                 </div>
                 <div className="bg-card border border-border rounded-3xl overflow-hidden shadow-2xl">
                   {genResult.type === 'video' ? (

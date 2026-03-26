@@ -25,7 +25,13 @@ export enum VisualStyle {
   Claymation = "Claymation",
   Retro80s = "Retro 80s",
   Gothic = "Gothic",
-  Minimalist = "Minimalist"
+  Minimalist = "Minimalist",
+  StudioPortrait = "Studio Portrait",
+  OilPainting = "Oil Painting",
+  Sketch = "Pencil Sketch",
+  NeonLight = "Neon Light",
+  Vaporwave = "Vaporwave",
+  Steampunk = "Steampunk"
 }
 
 export enum CharacterEmotion {
@@ -37,6 +43,21 @@ export enum CharacterEmotion {
   Depressed = "ซึมเศร้า/สิ้นหวัง",
   Psychotic = "โรคจิต/หลอน",
   Painful = "เจ็บปวด/ทรมาน"
+}
+
+export enum VoiceGender {
+  Auto = "ไม่ระบุ (Auto)",
+  Male = "ผู้ชาย",
+  Female = "ผู้หญิง"
+}
+
+export enum VoiceTone {
+  Auto = "ไม่ระบุ (Auto)",
+  Energetic = "ร่าเริง/พลังเยอะ",
+  Calm = "นุ่มนวล/ฟังสบาย",
+  Serious = "จริงจัง/น่าเชื่อถือ",
+  Playful = "ขี้เล่น/กวนๆ",
+  Storytelling = "นักเล่าเรื่อง/น่าติดตาม"
 }
 
 export enum ScriptTemplate {
@@ -73,6 +94,10 @@ export interface GenerateParams {
   template: ScriptTemplate;
   framework: ScriptFramework;
   includeHeadline: boolean;
+  enableViralSecrets?: boolean;
+  enableVoiceover?: boolean;
+  voiceGender?: VoiceGender;
+  voiceTone?: VoiceTone;
 }
 
 export interface CharacterData {
@@ -116,6 +141,7 @@ export interface StoryParams {
   protagonist: string;
   tone: string;
   style: VisualStyle;
+  enableViralSecrets?: boolean;
 }
 
 export interface DetailedPromptResult {
@@ -143,12 +169,7 @@ export interface MascotData {
 
 export interface TourScene {
   location: string;
-  action: string;
-  script: string;
-  camera_movement: string;
-  duration_plan: string;
   vibe: string;
-  sound_fx: string;
   image_prompt: string;
   video_prompt: string;
   image_url?: string;
@@ -166,5 +187,10 @@ export interface TourParams {
   locations: string;
   style: VisualStyle;
   tone: string;
+  atmosphere?: string;
   sceneCount: number;
+  enableViralSecrets?: boolean;
+  enableVoiceover?: boolean;
+  voiceGender?: VoiceGender;
+  voiceTone?: VoiceTone;
 }

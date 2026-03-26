@@ -1,20 +1,57 @@
 import React, { useState } from 'react';
-import { VisualStyle, TourData, TourParams } from '../types';
+import { VisualStyle, TourData, TourParams, VoiceGender, VoiceTone } from '../types';
 import { generateVlogTour, generateImage } from '../services/geminiService';
-import { SparklesIcon, MapIcon, ClipboardDocumentIcon, PhotoIcon, VideoCameraIcon } from '@heroicons/react/24/solid';
+import { SparklesIcon, MapIcon, ClipboardDocumentIcon, PhotoIcon, VideoCameraIcon, ArrowDownTrayIcon, CheckCircleIcon } from '@heroicons/react/24/solid';
 import { toast, Toaster } from 'sonner';
+import { motion, AnimatePresence } from 'motion/react';
+import { downloadImage } from '../services/downloadService';
 
 export const VlogTourMode: React.FC = () => {
   const [characterDna, setCharacterDna] = useState('');
   const [referenceImage, setReferenceImage] = useState<string | null>(null);
   const [locations, setLocations] = useState('');
   const [tone, setTone] = useState('ตื่นเต้น, สนุกสนาน');
+  const [atmosphere, setAtmosphere] = useState('สดใส ร่าเริง');
   const [style, setStyle] = useState<VisualStyle>(VisualStyle.Cinematic);
   const [sceneCount, setSceneCount] = useState(5);
+  const [enableViralSecrets, setEnableViralSecrets] = useState(true);
+  const [enableVoiceover, setEnableVoiceover] = useState(true);
+  const [voiceGender, setVoiceGender] = useState<VoiceGender>(VoiceGender.Auto);
+  const [voiceTone, setVoiceTone] = useState<VoiceTone>(VoiceTone.Auto);
   
   const [loading, setLoading] = useState(false);
   const [loadingStatus, setLoadingStatus] = useState('');
   const [result, setResult] = useState<TourData | null>(null);
+  const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
+
+  const templateCategories = [
+    {
+      title: '👻 สยองขวัญ (Horror)',
+      items: [
+        { name: 'บ้านไม้ร้าง (Haunted)', locations: 'บ้านไม้เก่าร้าง, ห้องใต้หลังคา, สวนรกชัฏ', tone: 'สยองขวัญ, ลึกลับ (Ghost)' },
+        { name: 'รพ. ร้าง (Hospital)', locations: 'โรงพยาบาลร้าง, ห้องฉุกเฉินเก่า, ทางเดินมืด', tone: 'สมจริงจนขนลุก (Realistic Horror)' },
+        { name: 'การ์ตูนผี (Cartoon)', locations: 'คฤหาสน์ผีสิง, ป่าช้าการ์ตูน, ปราสาทมืด', tone: 'การ์ตูนสยองขวัญ (Cartoon Horror)' },
+        { name: 'ผีไทย (Thai Ghost)', locations: 'ศาลาริมน้ำ, ต้นไทรใหญ่, วัดเก่ากลางดึก', tone: 'สยองขวัญแบบไทย (Thai Ghost)' },
+        { name: 'โรงเรียนร้าง (School)', locations: 'โรงเรียนร้าง, ห้องเรียนเก่า, ดาดฟ้าตึก', tone: 'สยองขวัญ, ลึกลับ (Ghost)' },
+      ]
+    },
+    {
+      title: '🗼 ท่องเที่ยว (Travel)',
+      items: [
+        { name: 'ญี่ปุ่น (Japan)', locations: 'โตเกียว, โอซาก้า, เกียวโต', tone: 'ตื่นเต้น, สนุกสนาน' },
+        { name: 'ยุโรป (Europe)', locations: 'ปารีส, ลอนดอน, โรม', tone: 'โรแมนติก, อบอุ่น' },
+        { name: 'ไทย (Thailand)', locations: 'เชียงใหม่, ภูเก็ต, กรุงเทพฯ', tone: 'สนุกสนาน, ร่าเริง' },
+        { name: 'ธรรมชาติ (Nature)', locations: 'ยอดเขาสูง, ป่าสน, น้ำตก', tone: 'ผจญภัย, ท้าทาย (Adventure)' },
+      ]
+    }
+  ];
+
+  const handleTemplateSelect = (t: { name: string, locations: string, tone: string }) => {
+    setLocations(t.locations);
+    setTone(t.tone);
+    setSelectedTemplate(t.name);
+    toast.success(`เลือกเทมเพลต: ${t.name}`);
+  };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -28,8 +65,8 @@ export const VlogTourMode: React.FC = () => {
   };
 
   const handleGenerate = async () => {
-    if (!characterDna.trim() || !locations.trim()) {
-      toast.error('กรุณากรอกข้อมูลให้ครบถ้วน');
+    if (!locations.trim()) {
+      toast.error('กรุณาระบุสถานที่ที่ต้องการไป');
       return;
     }
     
@@ -38,13 +75,20 @@ export const VlogTourMode: React.FC = () => {
     setLoadingStatus('กำลังวางแผนการเดินทาง...');
     
     try {
+      const finalDna = characterDna.trim() || 'A charismatic young traveler, friendly and adventurous';
+      
       const data = await generateVlogTour({ 
-        character_dna: characterDna, 
+        character_dna: finalDna, 
         referenceImage: referenceImage || undefined,
         locations, 
         style, 
         tone,
-        sceneCount
+        atmosphere,
+        sceneCount,
+        enableViralSecrets,
+        enableVoiceover,
+        voiceGender,
+        voiceTone
       });
       setResult(data);
       
@@ -89,6 +133,43 @@ export const VlogTourMode: React.FC = () => {
         </div>
         
         <div className="space-y-4">
+          <div className="space-y-4">
+            <label className="text-xs font-black text-gray-500 uppercase">⚡ เทมเพลตด่วน (Quick Templates)</label>
+            <div className="space-y-4 mt-2">
+              {templateCategories.map((cat, catIdx) => (
+                <div key={catIdx} className="space-y-2">
+                  <h4 className="text-[10px] font-black text-[#0066ff] uppercase tracking-wider flex items-center gap-2">
+                    <span className="w-1 h-1 bg-[#0066ff] rounded-full"></span>
+                    {cat.title}
+                  </h4>
+                  <div className="grid grid-cols-2 gap-2">
+                    {cat.items.map((t, i) => (
+                      <motion.button 
+                        key={i}
+                        whileHover={{ scale: 1.02, backgroundColor: 'rgba(0, 102, 255, 0.1)' }}
+                        whileTap={{ scale: 0.95 }}
+                        animate={selectedTemplate === t.name ? { scale: [1, 1.05, 1] } : {}}
+                        onClick={() => handleTemplateSelect(t)}
+                        className={`p-2 border rounded-xl text-[10px] font-bold transition-all text-left flex items-center gap-2 ${
+                          selectedTemplate === t.name 
+                            ? 'bg-[#0066ff]/20 border-[#0066ff] text-white shadow-[0_0_15px_rgba(0,102,255,0.3)]' 
+                            : 'bg-card border-border text-gray-400 hover:text-white hover:border-gray-500'
+                        }`}
+                      >
+                        {selectedTemplate === t.name ? (
+                          <CheckCircleIcon className="w-3 h-3 text-[#0066ff] shrink-0" />
+                        ) : (
+                          <span className="w-1.5 h-1.5 rounded-full shrink-0 bg-gray-600"></span>
+                        )}
+                        {t.name}
+                      </motion.button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
           <div>
             <label className="text-xs font-black text-gray-500 uppercase flex items-center gap-2">
               🧬 ตัวละครต้นแบบ (Character Reference)
@@ -118,11 +199,14 @@ export const VlogTourMode: React.FC = () => {
           </div>
 
           <div>
-            <label className="text-xs font-black text-gray-500 uppercase">🧬 รหัสพันธุกรรมตัวละคร (Character DNA)</label>
+            <label className="text-xs font-black text-gray-500 uppercase flex items-center gap-2">
+              🧬 รหัสพันธุกรรมตัวละคร (Character DNA)
+              <span className="text-[10px] font-normal lowercase text-gray-600">(Optional / Auto)</span>
+            </label>
             <textarea 
               value={characterDna} 
               onChange={e => setCharacterDna(e.target.value)} 
-              placeholder="เช่น ชายหนุ่มหล่อ ผมรองทรงสีดำ ใส่แว่นกรอบกลม (หรือก๊อป Master DNA มาใส่)" 
+              placeholder="เช่น ชายหนุ่มหล่อ ผมรองทรงสีดำ ใส่แว่นกรอบกลม (หากไม่ใส่ AI จะสุ่มให้เอง)" 
               className="w-full bg-card border border-border rounded-xl p-4 text-white mt-2 focus:outline-none focus:border-[#0066ff] h-24 resize-none"
             />
           </div>
@@ -148,13 +232,35 @@ export const VlogTourMode: React.FC = () => {
               className="w-full bg-card border border-border rounded-xl p-4 text-white mt-2 focus:outline-none focus:border-[#0066ff]" 
             />
             <div className="flex flex-wrap gap-2 mt-2">
-              {['ตื่นเต้น, สนุกสนาน', 'สยองขวัญ, ลึกลับ (Ghost)', 'ผจญภัย, ท้าทาย (Adventure)', 'โรแมนติก, อบอุ่น', 'ตลก, ร่าเริง'].map(t => (
+              {['ตื่นเต้น, สนุกสนาน', 'สยองขวัญ, ลึกลับ (Ghost)', 'สยองขวัญแบบไทย (Thai Ghost)', 'บ้านร้างสุดหลอน (Haunted House)', 'การ์ตูนสยองขวัญ (Cartoon Horror)', 'สมจริงจนขนลุก (Realistic Horror)', 'ผจญภัย, ท้าทาย (Adventure)', 'โรแมนติก, อบอุ่น', 'ตลก, ร่าเริง'].map(t => (
                 <button 
                   key={t}
                   onClick={() => setTone(t)}
-                  className={`px-3 py-1.5 rounded-lg text-[10px] font-bold border transition-all ${tone === t ? 'bg-[#0066ff]/20 border-[#0066ff] text-white' : 'bg-card border-border text-gray-500 hover:text-white hover:border-gray-500'}`}
+                  className={`px-3 py-1.5 rounded-lg text-[9px] font-bold border transition-all ${tone === t ? 'bg-[#0066ff]/20 border-[#0066ff] text-white' : 'bg-card border-border text-gray-500 hover:text-white hover:border-gray-500'}`}
                 >
                   {t}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label className="text-xs font-black text-gray-500 uppercase">✨ บรรยากาศในภาพ (Atmosphere)</label>
+            <input 
+              type="text" 
+              value={atmosphere} 
+              onChange={e => setAtmosphere(e.target.value)} 
+              placeholder="เช่น มืดหม่น, สดใส, หมอกลงจัด, แสงแดดอบอุ่น" 
+              className="w-full bg-card border border-border rounded-xl p-4 text-white mt-2 focus:outline-none focus:border-[#0066ff]" 
+            />
+            <div className="flex flex-wrap gap-2 mt-2">
+              {['สดใส ร่าเริง', 'มืดหม่น น่ากลัว', 'หมอกลงจัด ลึกลับ', 'แสงแดดอบอุ่น ยามเช้า', 'แสงนีออน ไซเบอร์พังก์', 'ฝนตก ปรอยๆ', 'หิมะตก หนาวเหน็บ', 'แสงสีทอง ยามเย็น'].map(a => (
+                <button 
+                  key={a}
+                  onClick={() => setAtmosphere(a)}
+                  className={`px-3 py-1.5 rounded-lg text-[9px] font-bold border transition-all ${atmosphere === a ? 'bg-[#0066ff]/20 border-[#0066ff] text-white' : 'bg-card border-border text-gray-500 hover:text-white hover:border-gray-500'}`}
+                >
+                  {a}
                 </button>
               ))}
             </div>
@@ -192,11 +298,65 @@ export const VlogTourMode: React.FC = () => {
               <span>10 ฉาก</span>
             </div>
           </div>
+          
+          <div className="flex items-center justify-between p-4 bg-card border border-border rounded-xl mt-4">
+            <div>
+              <p className="text-sm font-bold text-white">🔥 เปิดโหมด Viral Vlog (The Loop)</p>
+              <p className="text-xs text-gray-400 mt-1">เพิ่ม Hook, ลูกเล่นกล้อง และการเล่าเรื่องแบบวนลูป</p>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" className="sr-only peer" checked={enableViralSecrets} onChange={(e) => setEnableViralSecrets(e.target.checked)} />
+              <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#0066ff]"></div>
+            </label>
+          </div>
+
+          {/* Voiceover Settings */}
+          <div className="p-4 bg-card border border-border rounded-xl mt-4 space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-bold text-white flex items-center gap-2">🎙️ เปิดใช้งานเสียงพากย์ (Voiceover)</p>
+                <p className="text-xs text-gray-400 mt-1">เพิ่มบทพูดภาษาไทยใน Video Prompt</p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" className="sr-only peer" checked={enableVoiceover} onChange={(e) => setEnableVoiceover(e.target.checked)} />
+                <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#0066ff]"></div>
+              </label>
+            </div>
+
+            {enableVoiceover && (
+              <div className="grid grid-cols-2 gap-4 pt-4 border-t border-border">
+                <div>
+                  <label className="text-[10px] font-black text-gray-500 uppercase">เพศของเสียง (Gender)</label>
+                  <select
+                    value={voiceGender}
+                    onChange={(e) => setVoiceGender(e.target.value as VoiceGender)}
+                    className="w-full bg-background border border-border rounded-lg p-2 text-white mt-1 focus:outline-none focus:border-[#0066ff] text-xs"
+                  >
+                    {Object.values(VoiceGender).map(gender => (
+                      <option key={gender} value={gender}>{gender}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[10px] font-black text-gray-500 uppercase">โทนเสียง (Tone)</label>
+                  <select
+                    value={voiceTone}
+                    onChange={(e) => setVoiceTone(e.target.value as VoiceTone)}
+                    className="w-full bg-background border border-border rounded-lg p-2 text-white mt-1 focus:outline-none focus:border-[#0066ff] text-xs"
+                  >
+                    {Object.values(VoiceTone).map(tone => (
+                      <option key={tone} value={tone}>{tone}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         <button 
           onClick={handleGenerate} 
-          disabled={loading || !characterDna.trim() || !locations.trim()} 
+          disabled={loading || !locations.trim()} 
           className="w-full py-4 rounded-xl font-black text-lg bg-[#0066ff] text-white flex justify-center items-center gap-2 hover:bg-[#0055dd] transition-all disabled:opacity-50 mt-6"
         >
           {loading ? (
@@ -245,6 +405,15 @@ export const VlogTourMode: React.FC = () => {
                     <div className="absolute top-4 left-4 px-3 py-1 bg-black/60 backdrop-blur-md rounded-full border border-white/10">
                       <span className="text-[10px] font-black text-white uppercase tracking-widest">Scene {idx + 1}</span>
                     </div>
+                    {scene.image_url && (
+                      <button 
+                        onClick={() => downloadImage(scene.image_url!, `vlog-scene-${idx + 1}.png`)}
+                        className="absolute top-4 right-4 p-2 bg-black/60 backdrop-blur-md rounded-full border border-white/10 text-white hover:bg-[#0066ff] transition-all"
+                        title="ดาวน์โหลดรูปภาพ"
+                      >
+                        <ArrowDownTrayIcon className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
                   <div className="p-6 space-y-5">
                     <div className="flex justify-between items-start">
@@ -256,36 +425,10 @@ export const VlogTourMode: React.FC = () => {
                           <span className="text-[10px] font-black text-[#0066ff] uppercase bg-[#0066ff]/10 px-2 py-0.5 rounded-md">
                             {scene.vibe}
                           </span>
-                          <span className="text-[10px] font-bold text-gray-500 italic">
-                            {scene.duration_plan}
-                          </span>
                         </div>
                       </div>
                     </div>
 
-                    <div className="space-y-3">
-                      <div className="bg-white/5 p-4 rounded-2xl border border-white/5">
-                        <label className="text-[10px] font-black text-gray-500 uppercase block mb-2">🎬 Action & Movement</label>
-                        <p className="text-xs text-gray-300 leading-relaxed italic">{scene.action}</p>
-                        <div className="mt-2 pt-2 border-t border-white/5 flex items-center gap-2">
-                          <VideoCameraIcon className="w-3 h-3 text-purple-500" />
-                          <span className="text-[10px] text-purple-400 font-bold">{scene.camera_movement}</span>
-                        </div>
-                      </div>
-
-                      <div className="bg-[#0066ff]/5 p-5 rounded-2xl border border-[#0066ff]/10 relative overflow-hidden group/script">
-                        <div className="absolute top-0 right-0 p-2 opacity-10 group-hover/script:opacity-20 transition-opacity">
-                          <SparklesIcon className="w-8 h-8 text-[#0066ff]" />
-                        </div>
-                        <label className="text-[10px] font-black text-[#0066ff] uppercase block mb-2">💬 Script (Vlog Style)</label>
-                        <p className="text-sm text-white font-medium leading-relaxed relative z-10">"{scene.script}"</p>
-                        <div className="mt-3 flex items-center gap-2">
-                          <span className="text-[9px] text-gray-500 font-bold uppercase tracking-wider">Sound FX:</span>
-                          <span className="text-[9px] text-gray-400 italic">{scene.sound_fx}</span>
-                        </div>
-                      </div>
-                    </div>
-                    
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
                         <label className="text-[10px] font-black text-gray-500 uppercase">AI Prompts (Master DNA Locked)</label>

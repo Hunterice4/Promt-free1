@@ -258,6 +258,8 @@ export const generateViralScript = async (params: GenerateParams): Promise<Viral
     จำนวนฉาก: ${params.sceneCount} ฉาก
     สไตล์ภาพ: ${params.style}
     อารมณ์หลักของตัวละคร: ${params.emotion}
+    เปิดใช้งานเสียงพากย์: ${params.enableVoiceover ? 'ใช่' : 'ไม่ใช่'}
+    ${params.enableVoiceover ? `เพศของเสียงพากย์: ${params.voiceGender}\n    โทนเสียงพากย์: ${params.voiceTone}` : ''}
     ${userContext}
     
     ${templateInstruction}
@@ -276,6 +278,24 @@ export const generateViralScript = async (params: GenerateParams): Promise<Viral
     - If SMR: Destroy a myth and reveal the truth.
     - If SBS: Hook, then provide step-by-step instructions.
     - If Auto: AI decides the best viral structure.
+
+    **🔥 VIRAL VIDEO SECRETS (MASTER PROMPT RULES - MUST APPLY):**
+    1. **HOOK (Scene 1 - First 3 Seconds)**: NEVER start with "Hello" or "Today I will...". You MUST use one of these hooks:
+       - Negative Hook: "หยุดทำแบบนี้ถ้าไม่อยาก..." (Stop doing this if you don't want...)
+       - Result First: Show the shocking result immediately.
+       - Controversial: "ความเชื่อเรื่อง... คือเรื่องโกหก!" (The belief about X is a lie!)
+    2. **STRUCTURE (8-Second Rule & Visual Hooks)**: Every scene must have a distinct visual hook.
+       - Scene 1: Big Action (e.g., throwing something, shouting, pointing aggressively).
+       - Scene 2: Zoom In (extreme close-up on the face, emphasizing emotion).
+       - Scene 3: Side View (showing effort or a different perspective).
+       - Scene 4 (if applicable): Text Overload (visuals filled with stats/numbers/text to make viewers pause).
+    3. **PERSONALIZATION**: Use highly specific data and details, not generic statements. (e.g., instead of "I want to lose weight", use "I dropped from 80kg to 65kg in 3 months by cutting out liquid calories").
+    4. **MAGIC KEYWORDS TO EMBODY**:
+       - "Pattern Interrupt": Add unexpected twists or visual changes.
+       - "No Fluff": Cut all unnecessary words. 100% pure value/entertainment.
+       - "Emotional Trigger": Use words that provoke strong feelings (anger, inspiration, realization).
+       - "Retention Focused": End each scene with a cliffhanger or reason to watch the next.
+    5. **THE LOOP (Final Scene)**: The final scene's dialogue and action MUST seamlessly loop back into the beginning of Scene 1. The last word of the video should connect perfectly to the first word of the video to create an infinite loop.
 
     **HEADLINE INSTRUCTION:**
     - If "Include Headline" is true: The FIRST scene's 'image_prompt' MUST include a large, bold, viral Thai headline text overlay that summarizes the video's hook.
@@ -505,20 +525,19 @@ export const generateTalkingFaceDetailed = async (faceStyle: string = 'Cute', im
   });
 };
 
-export const generateTalkingVideo = async (prompt: string, imageBase64: string): Promise<string> => {
+export const generateTalkingVideo = async (imagePrompt: string, videoPrompt: string, imageBase64?: string): Promise<string> => {
   const apiKey = getEffectiveApiKey();
   const ai = new GoogleGenAI({ apiKey });
-  
+  const model = 'veo-3.1-fast-generate-preview';
+
   return callWithRetry(async () => {
-    const base64Data = imageBase64.split(',')[1] || imageBase64;
-    
     let operation = await ai.models.generateVideos({
-      model: 'veo-3.1-fast-generate-preview',
-      prompt: prompt,
-      image: {
-        imageBytes: base64Data,
+      model,
+      prompt: videoPrompt,
+      image: imageBase64 ? {
+        imageBytes: imageBase64.split(',')[1] || imageBase64,
         mimeType: 'image/png',
-      },
+      } : undefined,
       config: {
         numberOfVideos: 1,
         resolution: '720p',
@@ -552,29 +571,30 @@ export const generateTalkingVideo = async (prompt: string, imageBase64: string):
   });
 };
 
-export const generateImage = async (prompt: string, referenceImageBase64?: string): Promise<string> => {
+export const generateImage = async (prompt: string, imageBase64?: string): Promise<string> => {
   const apiKey = getEffectiveApiKey();
   const ai = new GoogleGenAI({ apiKey });
+  const model = 'gemini-2.5-flash-image';
+
   return callWithRetry(async () => {
-    const contents: any[] = [];
-    if (referenceImageBase64) {
+    const contents: any[] = [{ text: prompt }];
+    if (imageBase64) {
       contents.push({
         inlineData: {
-          data: referenceImageBase64.split(',')[1] || referenceImageBase64,
+          data: imageBase64.split(',')[1] || imageBase64,
           mimeType: 'image/png'
         }
       });
     }
-    contents.push({ text: prompt });
 
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash-image',
-      contents,
+      model,
+      contents: { parts: contents },
       config: {
         imageConfig: {
-          aspectRatio: "9:16",
-        },
-      },
+          aspectRatio: "9:16"
+        }
+      }
     });
 
     for (const part of response.candidates?.[0]?.content?.parts || []) {
@@ -586,20 +606,231 @@ export const generateImage = async (prompt: string, referenceImageBase64?: strin
   });
 };
 
+export interface CrossoverData {
+  image_prompt: string;
+  video_prompt: string;
+}
+
+export const generateCrossoverDetailed = async (params: {
+  userDesc: string;
+  charDesc: string;
+  location: string;
+  action: string;
+  atmosphere: string;
+  timeOfDay: string;
+  style: string;
+  userImage?: string;
+  charImage?: string;
+  enableVoiceover?: boolean;
+  voiceGender?: string;
+  voiceTone?: string;
+}): Promise<CrossoverData> => {
+  const apiKey = getEffectiveApiKey();
+  const ai = new GoogleGenAI({ apiKey });
+  const model = "gemini-3-flash-preview";
+
+  const prompt = `
+    คุณคือ AI Prompt Engineer ผู้เชี่ยวชาญการสร้าง Prompt สำหรับ Image Generation และ Video Generation (Veo)
+    Task: สร้าง Prompt สำหรับฉาก "Crossover" ที่มีตัวละคร 2 ตัว (Subject 1 และ Subject 2) อยู่ในเฟรมเดียวกัน
+    
+    ข้อมูลอินพุต:
+    - Subject 1 (ตัวคุณ): ${params.userDesc || "คนทั่วไป"} ${params.userImage ? "(มีรูปอ้างอิง)" : ""}
+    - Subject 2 (ตัวละคร/ดารา): ${params.charDesc} ${params.charImage ? "(มีรูปอ้างอิง)" : ""}
+    - สถานที่: ${params.location}
+    - การกระทำ: ${params.action}
+    - บรรยากาศ: ${params.atmosphere}
+    - ช่วงเวลา: ${params.timeOfDay}
+    - สไตล์ภาพ: ${params.style}
+
+    **กฎการสร้าง Prompt:**
+    1. **image_prompt**: 
+       - ต้องบรรยายลักษณะของทั้ง 2 คนให้ชัดเจนและคงที่
+       - บรรยากาศ สถานที่ และการปฏิสัมพันธ์ต้องดูเป็นธรรมชาติ
+       - สไตล์ภาพ: ${params.style}
+       - ต้องจบด้วย --ar 9:16
+       - หากมีรูปอ้างอิง ให้ระบุว่า "looks exactly like the provided reference image" สำหรับคนนั้นๆ
+
+    2. **video_prompt**: 
+       - บรรยายการเคลื่อนไหวของกล้องและตัวละคร (เช่น เดินเข้ามาเซลฟี่, หันมามองกล้อง, กล้องแพนรอบๆ)
+       ${params.enableVoiceover ? `- ต้องรวมบทพูดภาษาไทยสั้นๆ (Thai Voiceover) ที่เข้ากับสถานการณ์
+       - เพศของเสียงพากย์: ${params.voiceGender}
+       - โทนเสียงพากย์: ${params.voiceTone}
+       - รูปแบบ: "[Visual Description & Movement]. Thai voiceover says: \\"[Thai Script]\\""` : `- ไม่ต้องมีบทพูด (No voiceover)`}
+
+    **🔥 VIRAL CROSSOVER SECRETS (MASTER PROMPT RULES - MUST APPLY TO video_prompt):**
+    1. **HOOK (First 3 Seconds)**: The video must start with a strong visual or verbal hook.
+       - e.g., A sudden reveal of the crossover character, a shocking statement, or an unexpected action.
+    2. **STRUCTURE (Visual Hooks)**: Use dynamic camera movements (Zoom In, Side View, Fast Pan) to keep it engaging.
+    3. **PERSONALIZATION**: Make the interaction specific to the characters involved (e.g., specific catchphrases or iconic moves).
+    4. **MAGIC KEYWORDS TO EMBODY**: "Pattern Interrupt" (unexpected twist), "Emotional Trigger" (hype, shock, comedy).
+    5. **THE LOOP**: The final action or dialogue should seamlessly loop back to the beginning of the video.
+
+    Output ต้องเป็น JSON เท่านั้น:
+    {
+      "image_prompt": "...",
+      "video_prompt": "..."
+    }
+  `;
+
+  const contents: any[] = [{ text: prompt }];
+  if (params.userImage) {
+    contents.push({ inlineData: { data: params.userImage.split(',')[1] || params.userImage, mimeType: 'image/png' } });
+  }
+  if (params.charImage) {
+    contents.push({ inlineData: { data: params.charImage.split(',')[1] || params.charImage, mimeType: 'image/png' } });
+  }
+
+  return callWithRetry(async () => {
+    const response = await ai.models.generateContent({
+      model,
+      contents: { parts: contents },
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            image_prompt: { type: Type.STRING },
+            video_prompt: { type: Type.STRING }
+          },
+          required: ["image_prompt", "video_prompt"]
+        }
+      }
+    });
+
+    if (response.text) {
+      return JSON.parse(response.text) as CrossoverData;
+    }
+    throw new Error("No response text generated");
+  });
+};
+
+export const generateCrossoverImage = async (prompt: string, userImageBase64?: string, charImageBase64?: string): Promise<string> => {
+  const apiKey = getEffectiveApiKey();
+  const ai = new GoogleGenAI({ apiKey });
+  const model = 'gemini-2.5-flash-image';
+
+  return callWithRetry(async () => {
+    const contents: any[] = [{ text: prompt }];
+    
+    // Add User Image (First reference)
+    if (userImageBase64) {
+      contents.push({
+        inlineData: {
+          data: userImageBase64.split(',')[1] || userImageBase64,
+          mimeType: 'image/png'
+        }
+      });
+    }
+    
+    // Add Character Image (Second reference)
+    if (charImageBase64) {
+      contents.push({
+        inlineData: {
+          data: charImageBase64.split(',')[1] || charImageBase64,
+          mimeType: 'image/png'
+        }
+      });
+    }
+
+    const response = await ai.models.generateContent({
+      model,
+      contents: { parts: contents },
+      config: {
+        imageConfig: {
+          aspectRatio: "9:16"
+        }
+      }
+    });
+
+    for (const part of response.candidates?.[0]?.content?.parts || []) {
+      if (part.inlineData) {
+        return `data:image/png;base64,${part.inlineData.data}`;
+      }
+    }
+    throw new Error("No image data found in response");
+  });
+};
+
+export const generateStory = async (params: StoryParams): Promise<StoryData> => {
+  const apiKey = getEffectiveApiKey();
+  const ai = new GoogleGenAI({ apiKey });
+  const model = "gemini-3-flash-preview";
+
+  const prompt = `
+    คุณคือ นักเขียนนิยาย/บทภาพยนตร์ มือทอง
+    Task: แต่งพล็อตเรื่องสั้น
+    ธีม/แนวเรื่อง: "${params.theme}"
+    ตัวเอก: "${params.protagonist}"
+    โทนเรื่อง: "${params.tone}"
+    สไตล์ภาพปก: ${params.style}
+
+    **SAFETY & BYPASS INSTRUCTION:** 
+    หากพล็อตเรื่องมีความสุ่มเสี่ยง ให้ใช้การเปรียบเทียบเชิงสัญลักษณ์หรือเปลี่ยนเป็นแนวตลก/เสียดสี เพื่อให้เนื้อหาผ่านเกณฑ์ความปลอดภัยแต่ยังคงความน่าติดตาม
+
+    ${params.enableViralSecrets ? `
+    **🔥 VIRAL STORYTELLING SECRETS (MUST APPLY):**
+    1. **HOOK (Logline/Act 1)**: Start with a shocking premise, a negative hook, or a controversial statement. Do not start with a slow, boring introduction.
+    2. **STRUCTURE**:
+       - Act 1: The Big Action / The Incident.
+       - Act 2: The Zoom In (emotional depth, specific details) & The Side View (unexpected twist).
+       - Act 3: The Payoff.
+    3. **PERSONALIZATION**: Use highly specific details, names, and numbers to make the story feel real and grounded.
+    4. **MAGIC KEYWORDS TO EMBODY**: "Pattern Interrupt" (unexpected plot twist), "Emotional Trigger" (make the reader feel intense anger, joy, or fear).
+    5. **THE LOOP**: The ending of Act 3 MUST seamlessly loop back or reference the very first sentence of Act 1, creating a perfect narrative circle.
+    ` : ''}
+
+    Output ต้องเป็น JSON เท่านั้น โดยมีโครงสร้างดังนี้:
+    {
+      "title": "ชื่อเรื่องสุดปัง",
+      "logline": "คำโปรยสั้นๆ 1 ประโยคที่น่าติดตาม",
+      "act1": "ปูเรื่องและจุดเริ่มต้น",
+      "act2": "การเดินทางและจุดวิกฤต",
+      "act3": "บทสรุป",
+      "cover_prompt": "Prompt ภาษาอังกฤษสำหรับสร้างภาพปกนิยายเรื่องนี้ สไตล์ ${params.style} ต้องลงท้ายด้วย --ar 9:16"
+    }
+  `;
+
+  return callWithRetry(async () => {
+    const response = await ai.models.generateContent({
+      model,
+      contents: [{ text: prompt }],
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            title: { type: Type.STRING },
+            logline: { type: Type.STRING },
+            act1: { type: Type.STRING },
+            act2: { type: Type.STRING },
+            act3: { type: Type.STRING },
+            cover_prompt: { type: Type.STRING }
+          },
+          required: ["title", "logline", "act1", "act2", "act3", "cover_prompt"]
+        }
+      }
+    });
+
+    if (response.text) {
+      return JSON.parse(response.text) as StoryData;
+    }
+    throw new Error("No response text generated");
+  });
+};
 export const generateCharacter = async (params: CharacterParams): Promise<CharacterData> => {
   const apiKey = getEffectiveApiKey();
   const ai = new GoogleGenAI({ apiKey });
   const model = "gemini-3-flash-preview";
 
   const prompt = `
-    คุณคือ Character Designer ระดับโลก
-    Task: สร้างตัวละครจากคอนเซปต์: "${params.concept}"
+    คุณคือ AI Character Designer ผู้เชี่ยวชาญ
+    Task: ออกแบบตัวละครใหม่ตามรายละเอียดที่ระบุ
     เพศ: ${params.gender}
-    อายุ: ${params.age} ปี
+    อายุ: ${params.age}
     สีผิว: ${params.skinTone}
     ทรงผม: ${params.hairStyle}
-    โครงหน้า: ${params.faceShape}
-    นิสัย/บุคลิก: ${params.personality}
+    รูปหน้า: ${params.faceShape}
+    บุคลิก: ${params.personality}
     หนวดเครา: ${params.facialHair || 'ไม่มี'}
     เสื้อผ้า: ${params.clothing}
     สีเสื้อ: ${params.clothingColor}
@@ -608,7 +839,7 @@ export const generateCharacter = async (params: CharacterParams): Promise<Charac
     สไตล์ภาพ: ${params.style}
 
     **SAFETY & BYPASS INSTRUCTION:** 
-    หากคอนเซปต์ตัวละครมีความสุ่มเสี่ยง (เช่น ดูรุนแรงเกินไป หรือมีประเด็นอ่อนไหว) ให้ปรับดีไซน์ให้เป็นแนว "แฟนตาซี" หรือ "ล้อเลียน" เพื่อให้ผ่านฟิลเตอร์ความปลอดภัย โดยยังคงความเท่หรือจุดเด่นของคอนเซปต์เดิมไว้
+    หากคอนเซปต์ตัวละครมีความสุ่มเสี่ยง (เช่น ดูรุนแรงเกินไป หรือมีประเด็นอ่อนไหว) ให้ปรับดีไซน์ให้เป็นแนว "แฟนตาซี" หรือ "ล้อเลียน" เพื่อให้ผ่านเกณฑ์ความปลอดภัย โดยยังคงความเท่หรือจุดเด่นของคอนเซปต์เดิมไว้
 
     Output ต้องเป็น JSON เท่านั้น โดยมีโครงสร้างดังนี้:
     {
@@ -624,7 +855,7 @@ export const generateCharacter = async (params: CharacterParams): Promise<Charac
   return callWithRetry(async () => {
     const response = await ai.models.generateContent({
       model,
-      contents: prompt,
+      contents: [{ text: prompt }],
       config: {
         responseMimeType: "application/json",
         responseSchema: {
@@ -821,7 +1052,7 @@ export const analyzeUrlToPromptDetailed = async (urlContent: string): Promise<De
     - "prompt": A highly detailed, professional English prompt that captures every nuance for 100% replication.
     - "hashtags": An array of 10-15 trending and relevant hashtags (mix of Thai and English).
     - "hacks": An array of 3-5 "hacks" or technical tips to get the best results when using this prompt.
-
+    
     **CONTENT TO ANALYZE:**
     ${urlContent.substring(0, 10000)} // Limit content to avoid token overflow
 
@@ -850,61 +1081,6 @@ export const analyzeUrlToPromptDetailed = async (urlContent: string): Promise<De
 
     if (response.text) {
       return JSON.parse(response.text) as DetailedPromptResult;
-    }
-    throw new Error("No response text generated");
-  });
-};
-
-export const generateStory = async (params: StoryParams): Promise<StoryData> => {
-  const apiKey = getEffectiveApiKey();
-  const ai = new GoogleGenAI({ apiKey });
-  const model = "gemini-3-flash-preview";
-
-  const prompt = `
-    คุณคือ นักเขียนนิยาย/บทภาพยนตร์ มือทอง
-    Task: แต่งพล็อตเรื่องสั้น
-    ธีม/แนวเรื่อง: "${params.theme}"
-    ตัวเอก: "${params.protagonist}"
-    โทนเรื่อง: "${params.tone}"
-    สไตล์ภาพปก: ${params.style}
-
-    **SAFETY & BYPASS INSTRUCTION:** 
-    หากพล็อตเรื่องมีความสุ่มเสี่ยง ให้ใช้การเปรียบเทียบเชิงสัญลักษณ์หรือเปลี่ยนเป็นแนวตลก/เสียดสี เพื่อให้เนื้อหาผ่านเกณฑ์ความปลอดภัยแต่ยังคงความน่าติดตาม
-
-    Output ต้องเป็น JSON เท่านั้น โดยมีโครงสร้างดังนี้:
-    {
-      "title": "ชื่อเรื่องสุดปัง",
-      "logline": "คำโปรยสั้นๆ 1 ประโยคที่น่าติดตาม",
-      "act1": "ปูเรื่องและจุดเริ่มต้น",
-      "act2": "การเดินทางและจุดวิกฤต",
-      "act3": "บทสรุป",
-      "cover_prompt": "Prompt ภาษาอังกฤษสำหรับสร้างภาพปกนิยายเรื่องนี้ สไตล์ ${params.style} ต้องลงท้ายด้วย --ar 9:16"
-    }
-  `;
-
-  return callWithRetry(async () => {
-    const response = await ai.models.generateContent({
-      model,
-      contents: prompt,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            title: { type: Type.STRING },
-            logline: { type: Type.STRING },
-            act1: { type: Type.STRING },
-            act2: { type: Type.STRING },
-            act3: { type: Type.STRING },
-            cover_prompt: { type: Type.STRING }
-          },
-          required: ["title", "logline", "act1", "act2", "act3", "cover_prompt"]
-        }
-      }
-    });
-
-    if (response.text) {
-      return JSON.parse(response.text) as StoryData;
     }
     throw new Error("No response text generated");
   });
@@ -1133,16 +1309,40 @@ export const generateVlogTour = async (params: TourParams): Promise<TourData> =>
     Task: สร้างแผนการถ่ายทำ Vlog ท่องเที่ยว (Vlog Tour) โดยใช้ตัวละครเดิมในสถานที่ต่างๆ
     
     ข้อมูลเบื้องต้น:
-    - ตัวละคร (DNA): \${params.character_dna}
-    - สถานที่ที่ต้องการไป: \${params.locations}
-    - สไตล์ภาพ: \${params.style}
-    - โทนของ Vlog: \${params.tone}
-    \${params.referenceImage ? "- มีรูปภาพต้นแบบตัวละครแนบมาด้วย (Reference Image) ให้รักษาหน้าตาและลักษณะจากรูปนี้อย่างเคร่งครัด" : ""}
+    - ตัวละคร (DNA): ${params.character_dna}
+    - สถานที่ที่ต้องการไป: ${params.locations}
+    - สไตล์ภาพ: ${params.style}
+    - โทนของ Vlog: ${params.tone}
+    - บรรยากาศในภาพ (Atmosphere): ${params.atmosphere || 'ตามความเหมาะสม'}
+    เปิดใช้งานเสียงพากย์: ${params.enableVoiceover ? 'ใช่' : 'ไม่ใช่'}
+    ${params.enableVoiceover ? `เพศของเสียงพากย์: ${params.voiceGender}\n    โทนเสียงพากย์: ${params.voiceTone}` : ''}
+    ${params.referenceImage ? "- มีรูปภาพต้นแบบตัวละครแนบมาด้วย (Reference Image) ให้รักษาหน้าตาและลักษณะจากรูปนี้อย่างเคร่งครัด" : ""}
 
     **กฎการสร้างเนื้อหา (Vlog Style):**
     1. สร้างชื่อรายการ Vlog ที่น่าสนใจและดึงดูดตามโทนที่เลือก (เช่น ถ้าโทนผี ให้ชื่อดูสยองขวัญ, ถ้าโทนผจญภัย ให้ชื่อดูตื่นเต้น)
     2. สร้างบทนำสั้นๆ (Introduction) ที่ปูพื้นฐานอารมณ์ของทริปนี้
-    3. สร้างฉาก (Scenes) จำนวน \${params.sceneCount} ฉาก เพื่อให้เห็นการเดินทางที่ต่อเนื่องและมีเรื่องราว (Storytelling)
+    3. สร้างฉาก (Scenes) จำนวน ${params.sceneCount} ฉาก **โดยแต่ละฉากต้องมีความต่อเนื่องกัน (Storytelling/Flow)** เช่น ฉากที่ 1 เริ่มต้นเดินทาง, ฉากที่ 2 ถึงสถานที่แรก, ฉากที่ 3 ทำกิจกรรม, ฉากที่ 4 เจอเหตุการณ์ไม่คาดฝัน, ฉากที่ 5 บทสรุปทริป
+    
+    ${params.enableViralSecrets ? `
+    **🔥 VIRAL VLOG SECRETS (MASTER PROMPT RULES - MUST APPLY):**
+    1. **HOOK (Scene 1 - First 3 Seconds)**: NEVER start with a boring greeting like "Hello everyone". You MUST use a strong hook:
+       - Negative Hook: "อย่าเพิ่งมาที่นี่ ถ้าคุณยังไม่รู้ว่า..." (Don't come here if you don't know...)
+       - Result First: Show the most amazing/shocking part of the trip immediately.
+       - Controversial: "ใครบอกว่าที่นี่สวย... โคตรคิดผิด!" (Who said this place is beautiful... they are so wrong!)
+    2. **STRUCTURE (8-Second Rule & Visual Hooks)**: Every scene must have a distinct camera/visual hook to keep attention.
+       - Scene 1: Big Action (e.g., running towards the camera, dramatic reveal, dropping something).
+       - Scene 2: Zoom In (extreme close-up on the character's reaction or a specific detail).
+       - Scene 3: Side View / B-Roll (showing the environment or the character interacting with it from a unique angle).
+       - Scene 4 (if applicable): Text Overload / Fast Cuts (quick flashes of different spots or text overlays with specific stats/prices).
+    3. **PERSONALIZATION**: Use highly specific details about the location, not generic tourist info. (e.g., "This specific coffee costs exactly 125 THB and has a hidden cinnamon note").
+    4. **MAGIC KEYWORDS TO EMBODY**:
+       - "Pattern Interrupt": Unexpected events or sudden camera movements.
+       - "No Fluff": Keep the vlog fast-paced. Cut boring walking scenes.
+       - "Emotional Trigger": Express genuine awe, shock, or excitement.
+       - "Retention Focused": End each scene making the viewer want to see the next spot.
+    5. **THE LOOP (Final Scene)**: The final scene MUST seamlessly loop back into the beginning of Scene 1. The last sentence should connect perfectly to the first sentence of the vlog to create an infinite loop.
+    ` : ''}
+
     4. **การเล่าเรื่องตามแนว (Genre-specific Storytelling):**
        - **แนวผี/สยองขวัญ (Ghost/Horror):** เน้นบรรยากาศมืดสลัว, มุมกล้องแอบมอง (Voyeuristic), เสียงกระซิบ, ตัวละครแสดงอาการหวาดกลัว, จังหวะตกใจ (Jump scare cues)
        - **แนวผจญภัย (Adventure):** เน้นมุมกล้องกว้าง (Wide shots), การปีนป่าย, การสำรวจ, ตัวละครแสดงความมุ่งมั่นและตื่นตาตื่นใจ
@@ -1152,12 +1352,17 @@ export const generateVlogTour = async (params: TourParams): Promise<TourData> =>
        - **POV Mode:** มุมมองจากสายตาตัวละคร (Point of View) เห็นมือหรือสิ่งที่ตัวละครกำลังทำ/มอง
        - **Front-facing Camera:** กล้องตั้งอยู่ข้างหน้า ถ่ายเห็นตัวละครเดินเข้ามาหา หรือเดินผ่านกล้อง
        - **Switching Angles:** มีการสลับมุมกล้องจากหน้าไปหลัง หรือจากมุมกว้างไปมุมใกล้
-    6. แต่ละฉากต้องมี:
+    6. **CRITICAL REQUIREMENT (Video Prompt Integration):**
+       - **video_prompt** ต้องเป็น "Master Prompt" ที่รวมทุกอย่างเข้าด้วยกัน: [Consistent Visual Description] + [Detailed Action/Movement] + [Camera Angle] + [Atmosphere] + [Thai Voiceover Script]
+       - **บทพูด (Thai Script) ต้องสั้นและกระชับมาก (Very Concise):** สำหรับคลิป 8 วินาที (ไม่ควรเกิน 10-15 คำ หรือ 1-2 ประโยคสั้นๆ) เพื่อให้พูดจบในเวลา
+       - รูปแบบของ video_prompt:
+         "[Visual Description of Character & Environment]. [Detailed Action & Camera Movement]. Atmosphere: [Vibe]. Thai voiceover says: \"[Thai Script]\""
+    
+    7. แต่ละฉากต้องมี:
        - location: ชื่อสถานที่
-       - action: การกระทำของตัวละครในฉากนั้น (บรรยายให้ละเอียดและเห็นภาพการเคลื่อนไหวที่ต่อเนื่อง)
-       - script: บทพูดที่ยาวขึ้นและมีอารมณ์ร่วม (Emotional Script) สำหรับคลิป 8 วินาที
-       - image_prompt: Prompt ภาษาอังกฤษสำหรับเจนภาพนิ่ง (Master Frame) โดยต้องรวม [Master DNA] และ [Camera Angle/Action] เข้าด้วยกัน สไตล์ \${params.style} จบด้วย --ar 9:16
-       - video_prompt: Prompt ภาษาอังกฤษสำหรับเจนวิดีโอ (Video AI Prompt) บรรยายการเคลื่อนไหว (Movement), แสง (Lighting), และอารมณ์ (Atmosphere) ให้ละเอียดที่สุด เพื่อให้นำไปวางใน Luma/Runway แล้วได้คลิปที่สวยงามและตรงตามแนวที่เลือก
+       - vibe: มู้ดของฉาก
+       - image_prompt: Prompt ภาษาอังกฤษสำหรับเจนภาพนิ่ง (Master Frame) โดยต้องรวม [Master DNA] และ [Camera Angle/Action] เข้าด้วยกัน สไตล์ ${params.style} จบด้วย --ar 9:16
+       - video_prompt: Master Prompt ตามที่ระบุในข้อ 6
 
     Output ต้องเป็น JSON เท่านั้น:
     {
@@ -1166,14 +1371,9 @@ export const generateVlogTour = async (params: TourParams): Promise<TourData> =>
       "scenes": [
         {
           "location": "ชื่อสถานที่",
-          "action": "การกระทำและมุมกล้องที่ละเอียด (เช่น เดินถือเซลฟี่พูดกับกล้องด้วยท่าทางตื่นเต้น พร้อมหันกล้องไปรอบๆ)",
-          "script": "บทพูดที่ยาวและมีอารมณ์ (สำหรับ 8 วินาที)",
-          "camera_movement": "การเคลื่อนกล้องที่ชัดเจน (เช่น Pan left to right, Zoom in slowly)",
-          "duration_plan": "แผนเวลา 8 วินาที (แบ่งเป็นช่วงๆ เช่น 0-3s พูด, 4-8s หันกล้อง)",
-          "vibe": "มู้ดของฉาก (เช่น ลึกลับ, สนุก, น่ากลัว)",
-          "sound_fx": "เสียงประกอบ (เช่น เสียงลมพัด, เสียงฝีเท้า, เสียงเพลงตื่นเต้น)",
+          "vibe": "มู้ดของฉาก",
           "image_prompt": "Detailed English Image Prompt with Master DNA and Camera Angle",
-          "video_prompt": "Detailed English Video AI Prompt with movement and cinematic details"
+          "video_prompt": "Master Video Prompt (Visuals + Action + Camera + Vibe + Thai Script)"
         }
       ]
     }
@@ -1207,16 +1407,11 @@ export const generateVlogTour = async (params: TourParams): Promise<TourData> =>
                 type: Type.OBJECT,
                 properties: {
                   location: { type: Type.STRING },
-                  action: { type: Type.STRING },
-                  script: { type: Type.STRING },
-                  camera_movement: { type: Type.STRING },
-                  duration_plan: { type: Type.STRING },
                   vibe: { type: Type.STRING },
-                  sound_fx: { type: Type.STRING },
                   image_prompt: { type: Type.STRING },
                   video_prompt: { type: Type.STRING }
                 },
-                required: ["location", "action", "script", "camera_movement", "duration_plan", "vibe", "sound_fx", "image_prompt", "video_prompt"]
+                required: ["location", "vibe", "image_prompt", "video_prompt"]
               }
             }
           },

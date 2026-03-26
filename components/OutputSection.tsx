@@ -1,7 +1,8 @@
 
 import React, { useState } from 'react';
 import { ViralScript, Scene } from '../types';
-import { ClipboardDocumentIcon, CheckIcon, VideoCameraIcon, PhotoIcon, FireIcon, ArrowTopRightOnSquareIcon } from '@heroicons/react/24/outline';
+import { ClipboardDocumentIcon, CheckIcon, VideoCameraIcon, PhotoIcon, FireIcon, ArrowTopRightOnSquareIcon, ArrowDownTrayIcon } from '@heroicons/react/24/outline';
+import { downloadImage } from '../services/downloadService';
 
 interface OutputSectionProps {
   data: ViralScript | null;
@@ -167,15 +168,10 @@ export const OutputSection: React.FC<OutputSectionProps> = ({ data, loading, loa
                               <ArrowTopRightOnSquareIcon className="w-4 h-4" /> สร้างวิดีโอใน Flow
                             </a>
                             <button 
-                              onClick={() => {
-                                const link = document.createElement('a');
-                                link.href = scene.image_url!;
-                                link.download = `autodraw-scene-${scene.scene_number}.png`;
-                                link.click();
-                              }}
+                              onClick={() => downloadImage(scene.image_url!, `autodraw-scene-${scene.scene_number}.png`)}
                               className="text-white font-bold text-xs flex items-center gap-1 hover:text-[#00aaff] transition-colors"
                             >
-                              <ClipboardDocumentIcon className="w-4 h-4" /> Download Image
+                              <ArrowDownTrayIcon className="w-4 h-4" /> Download Image
                             </button>
                           </div>
                         </>

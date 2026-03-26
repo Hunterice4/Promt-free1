@@ -1,7 +1,8 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { VisualStyle, MascotParams, MascotData } from '../types';
 import { generateMascotDNA, generateMascotScene, generateImage } from '../services/geminiService';
-import { SparklesIcon, UserIcon, PhotoIcon, ClipboardDocumentIcon, ArrowRightIcon, CheckCircleIcon, BookOpenIcon, ClockIcon, TrashIcon } from '@heroicons/react/24/solid';
+import { downloadImage } from '../services/downloadService';
+import { SparklesIcon, UserIcon, PhotoIcon, ClipboardDocumentIcon, ArrowRightIcon, CheckCircleIcon, BookOpenIcon, ClockIcon, TrashIcon, ArrowDownTrayIcon } from '@heroicons/react/24/solid';
 import { Tooltip } from './Tooltip';
 import { toast, Toaster } from 'sonner';
 import { PromptLibrary } from './PromptLibrary';
@@ -439,10 +440,10 @@ export const MascotLockMode: React.FC = () => {
                   <h3 className="font-black text-white text-sm uppercase tracking-widest">แม่พิมพ์ (Character Sheet)</h3>
                   {mascotData.character_sheet_url && (
                     <button 
-                      onClick={() => downloadImage(mascotData.character_sheet_url!, 'character-sheet')}
-                      className="text-[10px] font-bold text-[#0066ff] hover:underline"
+                      onClick={() => downloadImage(mascotData.character_sheet_url!, `mascot-sheet-${mascotData.master_dna.substring(0, 10)}`)}
+                      className="flex items-center gap-1 text-[10px] font-bold text-[#0066ff] hover:underline"
                     >
-                      Download Sheet
+                      <ArrowDownTrayIcon className="w-3 h-3" /> Download Sheet
                     </button>
                   )}
                 </div>
@@ -464,10 +465,11 @@ export const MascotLockMode: React.FC = () => {
                       <div className="relative group">
                         <img src={sceneResult.url} className="w-full rounded-3xl border border-[#0066ff]/30 shadow-2xl shadow-[#0066ff]/10" alt="Scene Result" />
                         <button 
-                          onClick={() => downloadImage(sceneResult.url!, 'mascot-scene')}
-                          className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white font-bold gap-2 rounded-3xl"
+                          onClick={() => downloadImage(sceneResult.url!, `mascot-scene-${mascotData.master_dna.substring(0, 10)}`)}
+                          className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white font-bold gap-2 rounded-3xl"
                         >
-                          <ClipboardDocumentIcon className="w-6 h-6" /> Download Result
+                          <ArrowDownTrayIcon className="w-8 h-8" />
+                          <span>Download Result</span>
                         </button>
                       </div>
                     ) : (
@@ -513,10 +515,3 @@ const LoadingSpinner = () => (
     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
   </svg>
 );
-
-const downloadImage = (url: string, prefix: string) => {
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = `${prefix}-${Date.now()}.png`;
-  link.click();
-};

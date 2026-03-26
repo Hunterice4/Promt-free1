@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { generateMovieSetPrompt, generateImage } from '../services/geminiService';
 import { SparklesIcon, TrashIcon, PhotoIcon, VideoCameraIcon, UserIcon, UsersIcon, ArrowDownTrayIcon } from '@heroicons/react/24/solid';
+import { downloadImage } from '../services/downloadService';
 
 export const MovieSetMode: React.FC = () => {
   const [char1, setChar1] = useState('Harry Potter');
@@ -71,10 +72,7 @@ export const MovieSetMode: React.FC = () => {
   };
 
   const handleDownload = (url: string, name: string) => {
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = name;
-    link.click();
+    downloadImage(url, name);
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {

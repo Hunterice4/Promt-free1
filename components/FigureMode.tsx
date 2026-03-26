@@ -2,6 +2,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { generateFigureImage } from '../services/geminiService';
 import { PhotoIcon, SparklesIcon, TrashIcon, ArrowDownTrayIcon, PuzzlePieceIcon, ClockIcon } from '@heroicons/react/24/solid';
+import { downloadImage } from '../services/downloadService';
 
 export const FigureMode: React.FC = () => {
   const [media, setMedia] = useState<string | null>(null);
@@ -70,10 +71,7 @@ export const FigureMode: React.FC = () => {
 
   const handleDownload = () => {
     if (result) {
-      const link = document.createElement('a');
-      link.href = result;
-      link.download = 'generated-figure.png';
-      link.click();
+      downloadImage(result, 'generated-figure.png');
     }
   };
 

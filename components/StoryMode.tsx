@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { VisualStyle, StoryData } from '../types';
 import { generateStory, generateImage, generateRandomTheme, generateRandomProtagonist } from '../services/geminiService';
-import { SparklesIcon, BookOpenIcon } from '@heroicons/react/24/solid';
+import { downloadImage } from '../services/downloadService';
+import { SparklesIcon, BookOpenIcon, ArrowDownTrayIcon } from '@heroicons/react/24/solid';
 import { ClipboardDocumentIcon } from '@heroicons/react/24/outline';
 
 export const StoryMode: React.FC = () => {
@@ -9,6 +10,7 @@ export const StoryMode: React.FC = () => {
   const [protagonist, setProtagonist] = useState('');
   const [tone, setTone] = useState('ตื่นเต้น ระทึกขวัญ');
   const [style, setStyle] = useState<VisualStyle>(VisualStyle.Cinematic);
+  const [enableViralSecrets, setEnableViralSecrets] = useState(true);
   const [loading, setLoading] = useState(false);
   const [isSuggestingTheme, setIsSuggestingTheme] = useState(false);
   const [isSuggestingProtagonist, setIsSuggestingProtagonist] = useState(false);
@@ -45,7 +47,7 @@ export const StoryMode: React.FC = () => {
     setResult(null);
     setLoadingStatus('กำลังแต่งเนื้อเรื่อง...');
     try {
-      const data = await generateStory({ theme, protagonist, tone, style });
+      const data = await generateStory({ theme, protagonist, tone, style, enableViralSecrets });
       setResult(data);
       
       const skipImages = localStorage.getItem('skip_images') === 'true';
@@ -138,6 +140,17 @@ export const StoryMode: React.FC = () => {
               ))}
             </div>
           </div>
+          
+          <div className="flex items-center justify-between p-4 bg-card border border-border rounded-xl">
+            <div>
+              <p className="text-sm font-bold text-white">🔥 เปิดโหมด Viral Story (The Loop)</p>
+              <p className="text-xs text-gray-400 mt-1">เพิ่ม Hook, จุดหักมุม และการเล่าเรื่องแบบวนลูป</p>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" className="sr-only peer" checked={enableViralSecrets} onChange={(e) => setEnableViralSecrets(e.target.checked)} />
+              <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#0066ff]"></div>
+            </label>
+          </div>
         </div>
 
         <div className="pt-4 mt-auto space-y-4">
@@ -180,15 +193,11 @@ export const StoryMode: React.FC = () => {
               <div className="relative group/img w-full max-w-md mx-auto">
                 <img src={result.cover_url} alt={result.title} className="w-full rounded-2xl shadow-2xl shadow-[#0066ff]/20 border border-white/10" />
                 <button 
-                  onClick={() => {
-                    const link = document.createElement('a');
-                    link.href = result.cover_url!;
-                    link.download = `story-cover-${result.title}.png`;
-                    link.click();
-                  }}
-                  className="absolute inset-0 bg-black/60 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center text-white font-bold text-sm gap-2 rounded-2xl"
+                  onClick={() => downloadImage(result.cover_url!, `story-cover-${result.title.substring(0, 20)}`)}
+                  className="absolute inset-0 bg-black/60 opacity-0 group-hover/img:opacity-100 transition-opacity flex flex-col items-center justify-center text-white font-bold text-sm gap-2 rounded-2xl"
                 >
-                  <ClipboardDocumentIcon className="w-6 h-6" /> Download Cover
+                  <ArrowDownTrayIcon className="w-8 h-8" />
+                  <span>Download Cover</span>
                 </button>
               </div>
             ) : (
