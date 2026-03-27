@@ -1353,15 +1353,27 @@ export const generateVlogTour = async (params: TourParams): Promise<TourData> =>
        - **Front-facing Camera:** กล้องตั้งอยู่ข้างหน้า ถ่ายเห็นตัวละครเดินเข้ามาหา หรือเดินผ่านกล้อง
        - **Switching Angles:** มีการสลับมุมกล้องจากหน้าไปหลัง หรือจากมุมกว้างไปมุมใกล้
     6. **CRITICAL REQUIREMENT (Video Prompt Integration):**
-       - **video_prompt** ต้องเป็น "Master Prompt" ที่รวมทุกอย่างเข้าด้วยกัน: [Consistent Visual Description] + [Detailed Action/Movement] + [Camera Angle] + [Atmosphere] + [Thai Voiceover Script]
+       - **video_prompt** ต้องเป็น "Master Prompt" ที่รวมทุกอย่างเข้าด้วยกัน: [Consistent Visual Description] + [Detailed Action/Movement] + [Camera Angle] + [Atmosphere] + [Specific Points of Interest] + [Thai Voiceover Script]
        - **บทพูด (Thai Script) ต้องสั้นและกระชับมาก (Very Concise):** สำหรับคลิป 8 วินาที (ไม่ควรเกิน 10-15 คำ หรือ 1-2 ประโยคสั้นๆ) เพื่อให้พูดจบในเวลา
        - รูปแบบของ video_prompt:
-         "[Visual Description of Character & Environment]. [Detailed Action & Camera Movement]. Atmosphere: [Vibe]. Thai voiceover says: \"[Thai Script]\""
+         "[Visual Description of Character & Environment]. [Detailed Action & Camera Movement]. Atmosphere: [Vibe]. Featuring: [Specific Points of Interest]. Thai voiceover says: \"[Thai Script]\""
     
-    7. แต่ละฉากต้องมี:
+    7. **การระบุจุดเด่นของสถานที่ (Points of Interest):**
+       - หากมีการระบุตัวละครหรือสถานที่ที่ชัดเจน ให้คุณจินตนาการและระบุ "จุดเด่นที่ต้องเห็นในกล้อง" ของสถานที่นั้นๆ ลงไปใน Prompt ด้วย เพื่อให้ภาพและวิดีโอมีรายละเอียดที่สมจริงและตรงตามคอนเซปต์
+       - **ตัวอย่างเช่น:** บรรยายบรรยากาศบ้านร้างสไตล์จูออน (Ju-On Atmosphere)
+         - รายละเอียดสถานที่: บ้านพักอาศัย 2 ชั้นสไตล์ญี่ปุ่นดั้งเดิมที่ถูกทิ้งร้าง บรรยากาศปกคลุมด้วยความเสื่อมโทรมขั้นสุด พื้นผิวทุกอย่างเต็มไปด้วยฝุ่นหนาและคราบน้ำแห้งกรัง วอลเปเปอร์เก่าขาดรุ่งริ่งเผยให้เห็นผนังปูนด้านล่างที่ขึ้นราดำเป็นหย่อมๆ แสงสว่างส่องเข้าไม่ถึง ทำให้ในบ้านดูมืดสลัวแม้จะเป็นเวลากลางวัน
+         - จุดเด่นที่ต้องเห็นในกล้อง:
+           - บันไดไม้สยองขวัญ: บันไดไม้แคบๆ ที่เก่าและฝุ่นจับหนา ทอดตัวขึ้นไปยังชั้น 2 ที่มืดมิดสนิทจนมองไม่เห็นปลายทาง
+           - ปากทางห้องใต้หลังคา: ช่องสี่เหลี่ยมบนเพดานที่เปิดอ้าทิ้งไว้ มีเศษผ้าม่านเก่าขาดห้อยลงมา ดูอับชื้นและน่าขนลุกเหมือนมีบางอย่างซ่อนอยู่ข้างบนนั้น
+           - โถงทางเดินบีบคั้น: ทางเดินที่แคบและอึดอัด มีข้าวของเครื่องใช้เก่าๆ ถูกทิ้งขว้างกระจัดกระจาย สร้างเงาตะคุ่มตามมุมมืด
+           - ประตูโชจิฉีกขาด: ประตูเลื่อนกระดาษที่ขาดวิ่น เห็นเพียงโครงไม้หักๆ เพิ่มความรู้สึกของสถานที่ที่เคยเกิดโศกนาฏกรรม
+         - อารมณ์และโทน (Mood & Tone): เน้นความรู้สึกถูกกดทับ (Oppressive), ความเงียบที่ชวนให้ประสาทเสีย, กลิ่นอับชื้นของราไม้ และความรู้สึกเหมือนถูก "บางอย่าง" จับจ้องจากมุมมืดตลอดเวลา
+       - ให้นำจุดเด่นและบรรยากาศเหล่านี้ไปแปลเป็นภาษาอังกฤษและใส่ใน \`image_prompt\` และ \`video_prompt\` อย่างแนบเนียน
+
+    8. แต่ละฉากต้องมี:
        - location: ชื่อสถานที่
        - vibe: มู้ดของฉาก
-       - image_prompt: Prompt ภาษาอังกฤษสำหรับเจนภาพนิ่ง (Master Frame) โดยต้องรวม [Master DNA] และ [Camera Angle/Action] เข้าด้วยกัน สไตล์ ${params.style} จบด้วย --ar 9:16
+       - image_prompt: Prompt ภาษาอังกฤษสำหรับเจนภาพนิ่ง (Master Frame) โดยต้องรวม [Master DNA], [Camera Angle/Action] และ [Specific Points of Interest] เข้าด้วยกัน สไตล์ ${params.style} จบด้วย --ar 9:16
        - video_prompt: Master Prompt ตามที่ระบุในข้อ 6
 
     Output ต้องเป็น JSON เท่านั้น:
