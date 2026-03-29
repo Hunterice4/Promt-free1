@@ -5,6 +5,7 @@ import { SparklesIcon, MapIcon, ClipboardDocumentIcon, PhotoIcon, VideoCameraIco
 import { toast, Toaster } from 'sonner';
 import { motion, AnimatePresence } from 'motion/react';
 import { downloadImage } from '../services/downloadService';
+import { saveHistoryItem } from '../services/historyService';
 
 export const VlogTourMode: React.FC = () => {
   const [characterDna, setCharacterDna] = useState('');
@@ -96,6 +97,7 @@ export const VlogTourMode: React.FC = () => {
       if (skipImages) {
         setLoading(false);
         setLoadingStatus('');
+        await saveHistoryItem('Vlog Tour', locations, { data });
         return;
       }
 
@@ -112,6 +114,8 @@ export const VlogTourMode: React.FC = () => {
         }
       }
       
+      await saveHistoryItem('Vlog Tour', locations, { data: { ...data, scenes: updatedScenes } });
+      
     } catch (err: any) {
       console.error(err);
       toast.error('เกิดข้อผิดพลาดในการสร้าง Vlog Tour');
@@ -122,11 +126,11 @@ export const VlogTourMode: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col lg:flex-row w-full h-full">
+    <div className="flex flex-col lg:flex-row w-full h-full overflow-hidden bg-background">
       <Toaster position="top-center" richColors />
       
       {/* Input Section */}
-      <div className="w-full lg:w-1/3 p-6 space-y-6 bg-[#0a0a14] border-r border-border overflow-y-auto custom-scrollbar">
+      <div className="w-full lg:w-1/2 p-6 space-y-6 bg-[#0a0a14] border-r border-border h-1/2 lg:h-full overflow-y-auto custom-scrollbar shrink-0">
         <div>
           <h1 className="text-3xl font-black text-white mb-2">Vlog <span className="text-[#0066ff]">Tour</span></h1>
           <p className="text-gray-400 text-sm">พาทัวร์สถานที่ต่างๆ ด้วยตัวละครของคุณ</p>
@@ -369,7 +373,7 @@ export const VlogTourMode: React.FC = () => {
       </div>
 
       {/* Output Section */}
-      <div className="w-full lg:w-2/3 p-6 lg:p-12 bg-background overflow-y-auto custom-scrollbar">
+      <div className="w-full lg:w-1/2 p-6 lg:p-12 bg-background h-1/2 lg:h-full overflow-y-auto custom-scrollbar">
         {loading && !result && (
           <div className="flex flex-col items-center justify-center h-full space-y-6">
             <div className="w-16 h-16 border-4 border-[#0066ff]/30 border-t-[#0066ff] rounded-full animate-spin"></div>

@@ -6,6 +6,7 @@ import { SparklesIcon, UserIcon, PhotoIcon, ClipboardDocumentIcon, ArrowRightIco
 import { Tooltip } from './Tooltip';
 import { toast, Toaster } from 'sonner';
 import { PromptLibrary } from './PromptLibrary';
+import { saveHistoryItem } from '../services/historyService';
 
 export const MascotLockMode: React.FC = () => {
   const [dna, setDna] = useState('');
@@ -25,6 +26,26 @@ export const MascotLockMode: React.FC = () => {
   const [isLibraryOpen, setIsLibraryOpen] = useState(false);
   const [history, setHistory] = useState<MascotData[]>([]);
   const [showHistory, setShowHistory] = useState(false);
+  const [hasPaidKey, setHasPaidKey] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const checkKey = async () => {
+      const aistudio = (window as any).aistudio;
+      if (aistudio?.hasSelectedApiKey) {
+        const hasKey = await aistudio.hasSelectedApiKey();
+        setHasPaidKey(hasKey);
+      }
+    };
+    checkKey();
+  }, []);
+
+  const handleOpenKeySelector = async () => {
+    const aistudio = (window as any).aistudio;
+    if (aistudio?.openSelectKey) {
+      await aistudio.openSelectKey();
+      setHasPaidKey(true);
+    }
+  };
 
   useEffect(() => {
     const savedHistory = localStorage.getItem('mascot_history');
@@ -41,6 +62,7 @@ export const MascotLockMode: React.FC = () => {
     const newHistory = [data, ...history.filter(h => h.master_dna !== data.master_dna)].slice(0, 20);
     setHistory(newHistory);
     localStorage.setItem('mascot_history', JSON.stringify(newHistory));
+    saveHistoryItem('Mascot Lock Mode', dna, data);
   };
 
   const clearHistory = () => {
@@ -64,6 +86,9 @@ export const MascotLockMode: React.FC = () => {
       toast.success('วิเคราะห์ Master DNA สำเร็จ!');
     } catch (err: any) {
       console.error(err);
+      if (err.message?.includes("PERMISSION_DENIED") || err.message?.includes("entity was not found")) {
+        handleOpenKeySelector();
+      }
       toast.error('เกิดข้อผิดพลาดในการสร้าง DNA');
     } finally {
       setLoading(false);
@@ -91,6 +116,9 @@ export const MascotLockMode: React.FC = () => {
       toast.success('สร้าง Character Sheet สำเร็จ!');
     } catch (err: any) {
       console.error(err);
+      if (err.message?.includes("PERMISSION_DENIED") || err.message?.includes("entity was not found")) {
+        handleOpenKeySelector();
+      }
       toast.error('เกิดข้อผิดพลาดในการสร้างรูปภาพ');
     } finally {
       setLoading(false);
@@ -117,6 +145,9 @@ export const MascotLockMode: React.FC = () => {
       toast.success('สร้างรูปภาพสถานการณ์ใหม่สำเร็จ!');
     } catch (err: any) {
       console.error(err);
+      if (err.message?.includes("PERMISSION_DENIED") || err.message?.includes("entity was not found")) {
+        handleOpenKeySelector();
+      }
       toast.error('เกิดข้อผิดพลาดในการสร้างสถานการณ์');
     } finally {
       setLoading(false);
@@ -143,7 +174,7 @@ export const MascotLockMode: React.FC = () => {
               <UserIcon className="w-6 h-6 text-[#0066ff]" />
             </div>
             <div>
-              <h1 className="text-2xl font-black text-white">Mascot <span className="text-[#0066ff]">Lock</span></h1>
+              <h1 className="text-2xl font-black text-white">ล็อกหน้า <span className="text-[#0066ff]">มาสคอต</span></h1>
               <p className="text-gray-400 text-[10px] uppercase font-bold tracking-widest">เทคนิคล็อกหน้า Mascot ถาวร</p>
             </div>
           </div>
@@ -205,7 +236,7 @@ export const MascotLockMode: React.FC = () => {
                     )}
                     <div className="flex-1 min-w-0">
                       <h4 className="text-white font-bold text-sm truncate group-hover:text-[#0066ff] transition-colors">{h.master_dna}</h4>
-                      <p className="text-gray-500 text-[10px] truncate">Mascot DNA</p>
+                      <p className="text-gray-500 text-[10px] truncate">รหัสพันธุกรรม</p>
                     </div>
                   </button>
                 ))}
@@ -223,11 +254,11 @@ export const MascotLockMode: React.FC = () => {
           <>
             {/* Steps Indicator */}
             <div className="flex items-center justify-between px-2 py-4 bg-card rounded-2xl border border-border">
-              <StepItem num={1} active={step >= 1} label="DNA" />
+              <StepItem num={1} active={step >= 1} label="วิเคราะห์ DNA" />
               <div className={`h-px flex-1 mx-2 ${step > 1 ? 'bg-[#0066ff]' : 'bg-gray-700'}`} />
-              <StepItem num={2} active={step >= 2} label="Sheet" />
+              <StepItem num={2} active={step >= 2} label="แม่พิมพ์" />
               <div className={`h-px flex-1 mx-2 ${step > 2 ? 'bg-[#0066ff]' : 'bg-gray-700'}`} />
-              <StepItem num={3} active={step >= 3} label="Hybrid" />
+              <StepItem num={3} active={step >= 3} label="สร้างฉากใหม่" />
             </div>
 
             {step === 1 && (
@@ -392,7 +423,7 @@ export const MascotLockMode: React.FC = () => {
         {!loading && step === 2 && mascotData && (
           <div className="w-full max-w-2xl space-y-8 animate-fade-in">
              <div className="text-center">
-                <h2 className="text-3xl font-black text-white mb-2">Master DNA Analysis</h2>
+                <h2 className="text-3xl font-black text-white mb-2">วิเคราะห์รหัสพันธุกรรม (Master DNA)</h2>
                 <div className="inline-block px-4 py-1 bg-[#0066ff]/10 rounded-full border border-[#0066ff]/20">
                   <span className="text-[#0066ff] font-bold text-xs">🧬 รหัสพันธุกรรมพร้อมใช้งาน</span>
                 </div>
@@ -401,13 +432,13 @@ export const MascotLockMode: React.FC = () => {
              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="bg-card p-6 rounded-3xl border border-border space-y-4">
                   <h3 className="font-black text-white flex items-center gap-2">
-                    <CheckCircleIcon className="w-5 h-5 text-green-500" /> DNA Summary
+                    <CheckCircleIcon className="w-5 h-5 text-green-500" /> สรุป DNA
                   </h3>
                   <p className="text-gray-300 text-sm leading-relaxed">{mascotData.master_dna}</p>
                 </div>
                 <div className="bg-card p-6 rounded-3xl border border-border space-y-4">
                   <h3 className="font-black text-white flex items-center gap-2">
-                    <ClipboardDocumentIcon className="w-5 h-5 text-[#0066ff]" /> Character Sheet Prompt
+                    <ClipboardDocumentIcon className="w-5 h-5 text-[#0066ff]" /> พ้อมต์สำหรับแม่พิมพ์ (Character Sheet)
                   </h3>
                   <p className="text-[10px] text-gray-400 italic leading-tight">{mascotData.character_sheet_prompt}</p>
                 </div>
@@ -429,7 +460,7 @@ export const MascotLockMode: React.FC = () => {
         {!loading && step === 3 && mascotData && (
           <div className="w-full max-w-4xl space-y-10 animate-fade-in">
             <div className="text-center">
-              <h2 className="text-3xl font-black text-white mb-2">Character Sheet & Hybrid Generation</h2>
+              <h2 className="text-3xl font-black text-white mb-2">แม่พิมพ์ตัวละคร & การสร้างฉากใหม่</h2>
               <p className="text-gray-500 text-sm">นี่คือแม่พิมพ์และผลลัพธ์จากการล็อกหน้า</p>
             </div>
 
@@ -443,7 +474,7 @@ export const MascotLockMode: React.FC = () => {
                       onClick={() => downloadImage(mascotData.character_sheet_url!, `mascot-sheet-${mascotData.master_dna.substring(0, 10)}`)}
                       className="flex items-center gap-1 text-[10px] font-bold text-[#0066ff] hover:underline"
                     >
-                      <ArrowDownTrayIcon className="w-3 h-3" /> Download Sheet
+                      <ArrowDownTrayIcon className="w-3 h-3" /> ดาวน์โหลดแม่พิมพ์
                     </button>
                   )}
                 </div>
@@ -469,7 +500,7 @@ export const MascotLockMode: React.FC = () => {
                           className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white font-bold gap-2 rounded-3xl"
                         >
                           <ArrowDownTrayIcon className="w-8 h-8" />
-                          <span>Download Result</span>
+                          <span>ดาวน์โหลดผลลัพธ์</span>
                         </button>
                       </div>
                     ) : (

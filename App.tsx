@@ -11,11 +11,15 @@ import { TalkingMode } from './components/TalkingMode';
 import { PromptGenMode } from './components/PromptGenMode';
 import { VlogTourMode } from './components/VlogTourMode';
 import { CrossoverMode } from './components/CrossoverMode';
-import { setCustomApiKey } from './services/geminiService';
-import { CubeIcon, UserIcon, BookOpenIcon, Cog6ToothIcon, XMarkIcon, KeyIcon, PhotoIcon, EyeIcon, PuzzlePieceIcon, FaceSmileIcon, SparklesIcon, HashtagIcon, VideoCameraIcon, MapIcon, UserGroupIcon } from '@heroicons/react/24/solid';
+import MovieMasterMode from './components/MovieMasterMode';
+import { CubeIcon, UserIcon, BookOpenIcon, Cog6ToothIcon, XMarkIcon, KeyIcon, PhotoIcon, EyeIcon, PuzzlePieceIcon, FaceSmileIcon, SparklesIcon, HashtagIcon, VideoCameraIcon, MapIcon, UserGroupIcon, BoltIcon } from '@heroicons/react/24/solid';
+import { Toaster } from 'sonner';
+
+import { GlobalHistory } from './components/GlobalHistory';
+import { ClockIcon } from '@heroicons/react/24/solid';
 
 const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'object' | 'character' | 'mascot' | 'story' | 'vision' | 'figure' | 'talking' | 'movie' | 'promptgen' | 'vlogtour' | 'crossover'>('object');
+  const [activeTab, setActiveTab] = useState<'object' | 'character' | 'mascot' | 'story' | 'vision' | 'figure' | 'talking' | 'movie' | 'moviemaster' | 'promptgen' | 'vlogtour' | 'crossover' | 'history'>('moviemaster');
   const [showSettings, setShowSettings] = useState(false);
   const [apiKey, setApiKey] = useState(localStorage.getItem('gemini_api_key') || '');
   const [skipImages, setSkipImages] = useState(localStorage.getItem('skip_images') === 'true');
@@ -41,7 +45,6 @@ const App: React.FC = () => {
   };
 
   useEffect(() => {
-    setCustomApiKey(apiKey);
     localStorage.setItem('gemini_api_key', apiKey);
   }, [apiKey]);
 
@@ -89,6 +92,7 @@ const App: React.FC = () => {
 
   return (
     <div className="flex flex-col h-screen w-full bg-background overflow-hidden">
+      <Toaster position="top-center" richColors />
       {/* Top Navigation Bar */}
       <div className="h-20 lg:h-24 bg-[#0a0a14] border-b border-border flex items-center px-4 lg:px-8 z-50 shrink-0 justify-between overflow-x-auto no-scrollbar">
         <div className="flex items-center gap-6 lg:gap-10">
@@ -97,20 +101,20 @@ const App: React.FC = () => {
           <nav className="hidden md:flex items-center gap-6">
             {/* Group: Featured */}
             <div className="flex flex-col gap-1.5">
-              <span className="text-[9px] font-black text-[#00aaff] uppercase tracking-[0.2em] px-2 opacity-80">Featured</span>
+              <span className="text-[9px] font-black text-[#00aaff] uppercase tracking-[0.2em] px-2 opacity-80">แนะนำ</span>
               <div className="flex items-center gap-1">
                 <TabButton 
                   active={activeTab === 'crossover'} 
                   onClick={() => setActiveTab('crossover')} 
                   icon={<UserGroupIcon className="w-4 h-4 text-[#00aaff]" />} 
-                  label="Crossover Gen" 
+                  label="รวมร่างตัวละคร" 
                   isNew
                 />
                 <TabButton 
                   active={activeTab === 'vlogtour'} 
                   onClick={() => setActiveTab('vlogtour')} 
                   icon={<MapIcon className="w-4 h-4 text-[#00aaff]" />} 
-                  label="Vlog Tour" 
+                  label="พาเที่ยว Vlog" 
                 />
               </div>
             </div>
@@ -119,7 +123,7 @@ const App: React.FC = () => {
 
             {/* Group: Creation */}
             <div className="flex flex-col gap-1.5">
-              <span className="text-[9px] font-black text-purple-500 uppercase tracking-[0.2em] px-2 opacity-80">Creation</span>
+              <span className="text-[9px] font-black text-purple-500 uppercase tracking-[0.2em] px-2 opacity-80">การสร้าง</span>
               <div className="flex items-center gap-1">
                 <TabButton 
                   active={activeTab === 'object'} 
@@ -137,7 +141,14 @@ const App: React.FC = () => {
                   active={activeTab === 'movie'} 
                   onClick={() => setActiveTab('movie')} 
                   icon={<SparklesIcon className="w-4 h-4" />} 
-                  label="Abandoned Movie" 
+                  label="หนังร้างสยองขวัญ" 
+                />
+                <TabButton 
+                  active={activeTab === 'moviemaster'} 
+                  onClick={() => setActiveTab('moviemaster')} 
+                  icon={<VideoCameraIcon className="w-4 h-4 text-orange-500" />} 
+                  label="สร้างหนัง (Movie Master)" 
+                  isNew
                 />
               </div>
             </div>
@@ -146,7 +157,7 @@ const App: React.FC = () => {
 
             {/* Group: Character */}
             <div className="flex flex-col gap-1.5">
-              <span className="text-[9px] font-black text-yellow-500 uppercase tracking-[0.2em] px-2 opacity-80">Character</span>
+              <span className="text-[9px] font-black text-yellow-500 uppercase tracking-[0.2em] px-2 opacity-80">ตัวละคร</span>
               <div className="flex items-center gap-1">
                 <TabButton 
                   active={activeTab === 'character'} 
@@ -158,7 +169,7 @@ const App: React.FC = () => {
                   active={activeTab === 'mascot'} 
                   onClick={() => setActiveTab('mascot')} 
                   icon={<UserIcon className="w-4 h-4 text-yellow-500" />} 
-                  label="Mascot" 
+                  label="มาสคอต" 
                 />
                 <TabButton 
                   active={activeTab === 'talking'} 
@@ -179,7 +190,7 @@ const App: React.FC = () => {
 
             {/* Group: Analysis */}
             <div className="flex flex-col gap-1.5">
-              <span className="text-[9px] font-black text-green-500 uppercase tracking-[0.2em] px-2 opacity-80">Vision & Prompt</span>
+              <span className="text-[9px] font-black text-green-500 uppercase tracking-[0.2em] px-2 opacity-80">วิเคราะห์ & พ้อมต์</span>
               <div className="flex items-center gap-1">
                 <TabButton 
                   active={activeTab === 'vision'} 
@@ -191,7 +202,21 @@ const App: React.FC = () => {
                   active={activeTab === 'promptgen'} 
                   onClick={() => setActiveTab('promptgen')} 
                   icon={<HashtagIcon className="w-4 h-4" />} 
-                  label="Prompt Gen" 
+                  label="สร้างพ้อมต์" 
+                />
+              </div>
+            </div>
+            <div className="w-px h-10 bg-border/50" />
+
+            {/* Group: History */}
+            <div className="flex flex-col gap-1.5">
+              <span className="text-[9px] font-black text-pink-500 uppercase tracking-[0.2em] px-2 opacity-80">ประวัติ</span>
+              <div className="flex items-center gap-1">
+                <TabButton 
+                  active={activeTab === 'history'} 
+                  onClick={() => setActiveTab('history')} 
+                  icon={<ClockIcon className="w-4 h-4 text-pink-500" />} 
+                  label="ประวัติ" 
                 />
               </div>
             </div>
@@ -202,23 +227,27 @@ const App: React.FC = () => {
           {/* Mobile Menu (Grouped) */}
           <div className="md:hidden flex items-center gap-2 overflow-x-auto no-scrollbar max-w-[180px] sm:max-w-[250px] py-1 border-r border-border/30 pr-2 mr-1">
              <div className="flex items-center gap-1 px-1 border-r border-border/30">
-                <button onClick={() => setActiveTab('crossover')} className={`p-2 rounded-lg transition-all ${activeTab === 'crossover' ? 'bg-[#00aaff]/10 text-[#00aaff]' : 'text-gray-500'}`} title="Crossover Gen"><UserGroupIcon className="w-5 h-5" /></button>
-                <button onClick={() => setActiveTab('vlogtour')} className={`p-2 rounded-lg transition-all ${activeTab === 'vlogtour' ? 'bg-[#00aaff]/10 text-[#00aaff]' : 'text-gray-500'}`} title="Vlog Tour"><MapIcon className="w-5 h-5" /></button>
+                <button onClick={() => setActiveTab('crossover')} className={`p-2 rounded-lg transition-all ${activeTab === 'crossover' ? 'bg-[#00aaff]/10 text-[#00aaff]' : 'text-gray-500'}`} title="รวมร่างตัวละคร"><UserGroupIcon className="w-5 h-5" /></button>
+                <button onClick={() => setActiveTab('vlogtour')} className={`p-2 rounded-lg transition-all ${activeTab === 'vlogtour' ? 'bg-[#00aaff]/10 text-[#00aaff]' : 'text-gray-500'}`} title="พาเที่ยว Vlog"><MapIcon className="w-5 h-5" /></button>
              </div>
              <div className="flex items-center gap-1 px-1 border-r border-border/30">
                 <button onClick={() => setActiveTab('object')} className={`p-2 rounded-lg transition-all ${activeTab === 'object' ? 'bg-[#0066ff]/10 text-[#0066ff]' : 'text-gray-500'}`} title="ปลุกเสกสิ่งของ"><CubeIcon className="w-5 h-5" /></button>
                 <button onClick={() => setActiveTab('story')} className={`p-2 rounded-lg transition-all ${activeTab === 'story' ? 'bg-[#0066ff]/10 text-[#0066ff]' : 'text-gray-500'}`} title="แต่งเนื้อเรื่อง"><BookOpenIcon className="w-5 h-5" /></button>
-                <button onClick={() => setActiveTab('movie')} className={`p-2 rounded-lg transition-all ${activeTab === 'movie' ? 'bg-[#0066ff]/10 text-[#0066ff]' : 'text-gray-500'}`} title="Abandoned Movie"><SparklesIcon className="w-5 h-5" /></button>
+                <button onClick={() => setActiveTab('movie')} className={`p-2 rounded-lg transition-all ${activeTab === 'movie' ? 'bg-[#0066ff]/10 text-[#0066ff]' : 'text-gray-500'}`} title="หนังร้างสยองขวัญ"><SparklesIcon className="w-5 h-5" /></button>
+                <button onClick={() => setActiveTab('moviemaster')} className={`p-2 rounded-lg transition-all ${activeTab === 'moviemaster' ? 'bg-orange-500/10 text-orange-500' : 'text-gray-500'}`} title="สร้างหนัง (Movie Master)"><VideoCameraIcon className="w-5 h-5" /></button>
              </div>
              <div className="flex items-center gap-1 px-1 border-r border-border/30">
                 <button onClick={() => setActiveTab('character')} className={`p-2 rounded-lg transition-all ${activeTab === 'character' ? 'bg-[#0066ff]/10 text-[#0066ff]' : 'text-gray-500'}`} title="สร้างตัวละคร"><UserIcon className="w-5 h-5" /></button>
-                <button onClick={() => setActiveTab('mascot')} className={`p-2 rounded-lg transition-all ${activeTab === 'mascot' ? 'bg-yellow-500/10 text-yellow-500' : 'text-gray-500'}`} title="Mascot"><UserIcon className="w-5 h-5" /></button>
+                <button onClick={() => setActiveTab('mascot')} className={`p-2 rounded-lg transition-all ${activeTab === 'mascot' ? 'bg-yellow-500/10 text-yellow-500' : 'text-gray-500'}`} title="มาสคอต"><UserIcon className="w-5 h-5" /></button>
                 <button onClick={() => setActiveTab('talking')} className={`p-2 rounded-lg transition-all ${activeTab === 'talking' ? 'bg-[#0066ff]/10 text-[#0066ff]' : 'text-gray-500'}`} title="หน้าพูดได้"><FaceSmileIcon className="w-5 h-5" /></button>
                 <button onClick={() => setActiveTab('figure')} className={`p-2 rounded-lg transition-all ${activeTab === 'figure' ? 'bg-[#0066ff]/10 text-[#0066ff]' : 'text-gray-500'}`} title="เจนฟิกเกอร์"><PuzzlePieceIcon className="w-5 h-5" /></button>
              </div>
-             <div className="flex items-center gap-1 px-1">
+             <div className="flex items-center gap-1 px-1 border-r border-border/30">
                 <button onClick={() => setActiveTab('vision')} className={`p-2 rounded-lg transition-all ${activeTab === 'vision' ? 'bg-green-500/10 text-green-500' : 'text-gray-500'}`} title="แกะ Prompt"><EyeIcon className="w-5 h-5" /></button>
-                <button onClick={() => setActiveTab('promptgen')} className={`p-2 rounded-lg transition-all ${activeTab === 'promptgen' ? 'bg-green-500/10 text-green-500' : 'text-gray-500'}`} title="Prompt Gen"><HashtagIcon className="w-5 h-5" /></button>
+                <button onClick={() => setActiveTab('promptgen')} className={`p-2 rounded-lg transition-all ${activeTab === 'promptgen' ? 'bg-green-500/10 text-green-500' : 'text-gray-500'}`} title="สร้างพ้อมต์"><HashtagIcon className="w-5 h-5" /></button>
+             </div>
+             <div className="flex items-center gap-1 px-1">
+                <button onClick={() => setActiveTab('history')} className={`p-2 rounded-lg transition-all ${activeTab === 'history' ? 'bg-pink-500/10 text-pink-500' : 'text-gray-500'}`} title="ประวัติการสร้าง"><ClockIcon className="w-5 h-5" /></button>
              </div>
           </div>
 
@@ -331,10 +360,12 @@ const App: React.FC = () => {
         {activeTab === 'vision' && <VisionMode />}
         {activeTab === 'figure' && <FigureMode />}
         {activeTab === 'movie' && <MovieSetMode />}
+        {activeTab === 'moviemaster' && <MovieMasterMode />}
         {activeTab === 'talking' && <TalkingMode />}
         {activeTab === 'promptgen' && <PromptGenMode />}
         {activeTab === 'vlogtour' && <VlogTourMode />}
         {activeTab === 'crossover' && <CrossoverMode />}
+        {activeTab === 'history' && <GlobalHistory />}
       </div>
     </div>
   );

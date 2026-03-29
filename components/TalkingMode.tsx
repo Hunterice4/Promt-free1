@@ -2,6 +2,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { generateTalkingVideo, generateTalkingFaceDetailed, generateImage, TalkingFaceData, generateRandomFood } from '../services/geminiService';
 import { downloadImage } from '../services/downloadService';
+import { saveHistoryItem } from '../services/historyService';
+
 import { 
   PhotoIcon, 
   VideoCameraIcon, 
@@ -60,6 +62,7 @@ export const TalkingMode: React.FC = () => {
       localStorage.setItem('talking_face_history', JSON.stringify(newHistory));
       return newHistory;
     });
+    saveHistoryItem('Talking Face', data.image_prompt, { data, imageUrl });
   };
 
   const clearHistory = () => {
@@ -207,10 +210,10 @@ export const TalkingMode: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col lg:flex-row w-full lg:h-full bg-background">
+    <div className="flex flex-col lg:flex-row w-full h-full overflow-hidden bg-background">
       <Toaster position="top-center" richColors />
       {/* Input Section */}
-      <div className="w-full lg:w-1/3 p-6 space-y-8 flex flex-col lg:h-full lg:overflow-y-auto bg-[#0a0a14] border-r border-border">
+      <div className="w-full lg:w-1/2 p-6 space-y-8 flex flex-col h-1/2 lg:h-full overflow-y-auto bg-[#0a0a14] border-r border-border shrink-0 custom-scrollbar">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-black text-white mb-2 tracking-tight">
@@ -395,7 +398,7 @@ export const TalkingMode: React.FC = () => {
       </div>
 
       {/* Output Section */}
-      <div className="flex-1 bg-[#05050a] lg:h-full lg:overflow-y-auto p-8 flex flex-col items-center justify-center">
+      <div className="w-full lg:w-1/2 bg-[#05050a] h-1/2 lg:h-full overflow-y-auto p-8 flex flex-col items-center justify-center custom-scrollbar">
         {!generatedData && !result ? (
           <div className="text-center space-y-6 opacity-50">
             <div className="w-32 h-32 bg-card rounded-full flex items-center justify-center border-2 border-dashed border-border mx-auto">

@@ -4,6 +4,7 @@ import { generateStory, generateImage, generateRandomTheme, generateRandomProtag
 import { downloadImage } from '../services/downloadService';
 import { SparklesIcon, BookOpenIcon, ArrowDownTrayIcon } from '@heroicons/react/24/solid';
 import { ClipboardDocumentIcon } from '@heroicons/react/24/outline';
+import { saveHistoryItem } from '../services/historyService';
 
 export const StoryMode: React.FC = () => {
   const [theme, setTheme] = useState('');
@@ -54,12 +55,15 @@ export const StoryMode: React.FC = () => {
       if (skipImages) {
         setLoading(false);
         setLoadingStatus('');
+        await saveHistoryItem('Story Mode', theme, data);
         return;
       }
 
       setLoadingStatus('กำลังวาดภาพปก...');
       const imageUrl = await generateImage(data.cover_prompt);
-      setResult({ ...data, cover_url: imageUrl });
+      const finalData = { ...data, cover_url: imageUrl };
+      setResult(finalData);
+      await saveHistoryItem('Story Mode', theme, finalData);
     } catch (err: any) {
       console.error(err);
       let errorMessage = "เกิดข้อผิดพลาดในการสร้างเนื้อเรื่อง";
@@ -83,11 +87,11 @@ export const StoryMode: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col lg:flex-row w-full h-full">
+    <div className="flex flex-col lg:flex-row w-full h-full overflow-hidden bg-background">
       {/* Input Section */}
-      <div className="w-full lg:w-1/3 p-6 space-y-6 bg-[#0a0a14] border-r border-border overflow-y-auto custom-scrollbar">
+      <div className="w-full lg:w-1/2 p-6 space-y-6 bg-[#0a0a14] border-r border-border h-1/2 lg:h-full overflow-y-auto custom-scrollbar shrink-0">
         <div>
-          <h1 className="text-3xl font-black text-white mb-2">Story <span className="text-[#0066ff]">Generator</span></h1>
+          <h1 className="text-3xl font-black text-white mb-2">แต่ง <span className="text-[#0066ff]">เนื้อเรื่อง</span></h1>
           <p className="text-gray-400 text-sm">แต่งพล็อตเรื่องสั้น พร้อมภาพปกนิยาย</p>
         </div>
         
@@ -175,7 +179,7 @@ export const StoryMode: React.FC = () => {
       </div>
 
       {/* Output Section */}
-      <div className="w-full lg:w-2/3 p-6 lg:p-12 bg-background overflow-y-auto custom-scrollbar flex flex-col items-center">
+      <div className="w-full lg:w-1/2 p-6 lg:p-12 bg-background h-1/2 lg:h-full overflow-y-auto custom-scrollbar flex flex-col items-center">
         {loading && (
           <div className="flex flex-col items-center justify-center h-full space-y-6">
             <div className="w-16 h-16 border-4 border-[#0066ff]/30 border-t-[#0066ff] rounded-full animate-spin"></div>
@@ -197,7 +201,7 @@ export const StoryMode: React.FC = () => {
                   className="absolute inset-0 bg-black/60 opacity-0 group-hover/img:opacity-100 transition-opacity flex flex-col items-center justify-center text-white font-bold text-sm gap-2 rounded-2xl"
                 >
                   <ArrowDownTrayIcon className="w-8 h-8" />
-                  <span>Download Cover</span>
+                  <span>ดาวน์โหลดรูปปก</span>
                 </button>
               </div>
             ) : (

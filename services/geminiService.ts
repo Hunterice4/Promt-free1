@@ -1,6 +1,6 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
-import { GenerateParams, ViralScript, CharacterEmotion, ScriptTemplate, CharacterParams, CharacterData, StoryParams, StoryData, ScriptFramework, DetailedPromptResult, VisualStyle, MascotParams, MascotData, TourParams, TourData } from "../types";
+import { GenerateParams, ViralScript, CharacterEmotion, ScriptTemplate, CharacterParams, CharacterData, StoryParams, StoryData, ScriptFramework, DetailedPromptResult, VisualStyle, MascotParams, MascotData, TourParams, TourData, CinematicParams, CinematicData, FigureData } from "../types";
 
 const RANDOM_OBJECTS = [
   "ทุเรียนหลงฤดู", "ยาดมหมดอายุ", "หมอนข้างเน่า", "พัดลมเสียงดัง", 
@@ -28,42 +28,8 @@ const RANDOM_THEMES = [
   "ความรักของ AI กับมนุษย์", "สืบสวนคดีในยุควิคตอเรียน", "หนีตายซอมบี้ในห้างสรรพสินค้า",
   "การแก้แค้นของนักฆ่าที่ถูกหักหลัง", "การผจญภัยในโลกใต้บาดาล", "การแข่งขันกีฬาเวทมนตร์สุดอันตราย",
   "ชีวิตประจำวันของยมทูตฝึกหัด", "การไขปริศนาอารยธรรมโบราณที่สาบสูญ", "ความรักในยุคสงครามโลก",
-  "การเอาชีวิตรอดบนเกาะร้างที่มีความลับซ่อนอยู่", "การต่อสู้กับสัตว์ประหลาดไคจู", "การเดินทางของนักดนตรีพเนจร",
-  "การสืบสวนคดีคนหายในหมู่บ้านลึกลับ", "การทำฟาร์มในต่างโลก", "การแข่งขันรถซิ่งใต้ดิน",
-  "ความรักของแวมไพร์กับนักล่าแวมไพร์", "การผจญภัยของกลุ่มโจรคุณธรรม", "การเอาชีวิตรอดในเขาวงกตมรณะ",
-  "การเดินทางเพื่อตามหาความทรงจำที่หายไป", "การต่อสู้ของหุ่นยนต์รบยักษ์", "การไขปริศนาฆาตกรรมในห้องปิดตาย",
-  "ความรักของเทพธิดากับมนุษย์ธรรมดา", "การผจญภัยในโลกแห่งความฝัน", "การแข่งขันเกมโชว์เอาชีวิตรอด",
-  "การสืบสวนคดีในโรงเรียนประจำ", "การเดินทางของพ่อค้าเร่ในโลกแฟนตาซี", "การต่อสู้กับลัทธิมืด",
-  "ความรักของเพื่อนสนิทที่แอบรัก", "การผจญภัยในป่าเวทมนตร์", "การเอาชีวิตรอดจากภัยพิบัติทางธรรมชาติ",
-  "การเดินทางเพื่อตามหาสมบัติของตระกูล", "การต่อสู้ของนักสู้ใต้ดิน", "การไขปริศนาคำสาปประจำตระกูล",
-  "ความรักของเจ้านายกับลูกน้อง", "การผจญภัยในโลกคู่ขนาน", "การแข่งขัน e-sports ระดับโลก"
+  "การเอาชีวิตรอดบนเกาะร้างที่มีความลับซ่อนอยู่", "การต่อสู้กับสัตว์ประหลาดไคจู"
 ];
-
-const RANDOM_PROTAGONISTS = [
-  "เด็กหนุ่มผู้มีพลังไฟ", "แมวที่พูดได้", "นักสืบที่มองเห็นวิญญาณ", "เจ้าหญิงที่ถูกสาปให้เป็นมังกร",
-  "หุ่นยนต์ที่อยากมีความรู้สึก", "แวมไพร์ที่แพ้เลือด", "โจรสลัดที่ว่ายน้ำไม่เป็น", "ซามูไรตาบอด",
-  "แม่มดที่ใช้เวทมนตร์ไม่เป็น", "นักฆ่าที่กลัวเลือด", "เทพเจ้าที่ถูกเนรเทศ", "มนุษย์ต่างดาวที่หลงทาง",
-  "นักวิทยาศาสตร์สติเฟื่อง", "นักดนตรีที่เล่นดนตรีไม่ได้", "นักรบที่ใช้กระทะเป็นอาวุธ", "เด็กสาวที่สามารถอ่านใจคนได้",
-  "สุนัขจรจัดที่มีพลังจิต", "ต้นไม้ที่เดินได้", "ผีที่กลัวความมืด", "นักมายากลที่ใช้เวทมนตร์จริงๆ",
-  "นักบินอวกาศที่กลัวความสูง", "เชฟที่ทำอาหารไม่เป็น", "นักกีฬาที่แพ้ทุกการแข่งขัน", "นักเขียนที่หมดมุก",
-  "นักประดิษฐ์ที่สร้างแต่ของไร้สาระ", "นักโบราณคดีที่กลัวผี", "นักผจญภัยที่หลงทางตลอดเวลา", "นักรบที่ชอบทำอาหาร",
-  "เจ้าชายที่อยากเป็นสามัญชน", "นางเงือกที่อยากมีขา", "มังกรที่พ่นไฟไม่ได้", "ยักษ์ที่ใจดี",
-  "นางฟ้าที่ทำดีไม่ขึ้น", "ยมทูตที่ใจอ่อน", "ปีศาจที่อยากทำดี", "นักบวชที่ชอบเล่นการพนัน",
-  "นักเรียนที่สอบตกตลอด", "ครูที่เกลียดเด็ก", "หมอที่กลัวเข็ม", "ตำรวจที่กลัวปืน",
-  "ทนายความที่พูดติดอ่าง", "นักข่าวที่กลัวกล้อง", "นักแสดงที่เล่นแข็งเป็นหิน", "นักร้องที่ร้องเพลงเพี้ยน",
-  "นักเต้นที่เต้นไม่ตรงจังหวะ", "นักวาดภาพที่ตาบอดสี", "นักออกแบบที่ไม่มีเซนส์ด้านศิลปะ", "ช่างภาพที่ถ่ายรูปเบลอตลอด",
-  "โปรแกรมเมอร์ที่เขียนโค้ดไม่เป็น", "เกมเมอร์ที่เล่นเกมแพ้ตลอด", "ยูทูบเบอร์ที่ไม่มีคนดู"
-];
-
-let customApiKey: string | null = null;
-
-export const setCustomApiKey = (key: string | null) => {
-  customApiKey = key;
-};
-
-const getEffectiveApiKey = () => {
-  return (customApiKey && customApiKey.trim() !== "") ? customApiKey : process.env.API_KEY;
-};
 
 export const generateRandomObject = async (): Promise<string> => {
   const randomIndex = Math.floor(Math.random() * RANDOM_OBJECTS.length);
@@ -81,77 +47,23 @@ export const generateRandomTheme = async (): Promise<string> => {
 };
 
 export const generateRandomProtagonist = async (): Promise<string> => {
-  const randomIndex = Math.floor(Math.random() * RANDOM_PROTAGONISTS.length);
-  return RANDOM_PROTAGONISTS[randomIndex];
+  const randomIndex = Math.floor(Math.random() * RANDOM_CONCEPTS.length);
+  return RANDOM_CONCEPTS[randomIndex];
 };
 
-const MAX_RETRIES = 5;
-const INITIAL_RETRY_DELAY = 3000; // 3 seconds
+const getEffectiveApiKey = () => {
+  return process.env.GEMINI_API_KEY || '';
+};
 
-const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
-const callWithRetry = async <T>(fn: () => Promise<T>, retries = MAX_RETRIES): Promise<T> => {
+const callWithRetry = async <T>(fn: () => Promise<T>, retries = 3): Promise<T> => {
   try {
     return await fn();
   } catch (error: any) {
-    const errorString = JSON.stringify(error).toLowerCase();
-    const errorMessage = (error?.message || "").toLowerCase();
-    const nestedErrorMessage = (error?.error?.message || "").toLowerCase();
-    
-    const isQuotaError = 
-      errorMessage.includes('quota') || 
-      errorMessage.includes('429') || 
-      errorMessage.includes('resource_exhausted') ||
-      nestedErrorMessage.includes('quota') ||
-      nestedErrorMessage.includes('429') ||
-      nestedErrorMessage.includes('resource_exhausted') ||
-      errorString.includes('quota') ||
-      errorString.includes('429') ||
-      errorString.includes('resource_exhausted');
-
-    const isPermissionError = 
-      errorMessage.includes('permission') || 
-      errorMessage.includes('403') ||
-      errorMessage.includes('requested entity was not found') ||
-      nestedErrorMessage.includes('permission') ||
-      nestedErrorMessage.includes('403') ||
-      nestedErrorMessage.includes('requested entity was not found') ||
-      errorString.includes('permission') ||
-      errorString.includes('403') ||
-      errorString.includes('requested entity was not found');
-
-    const isTransientError = 
-      isQuotaError ||
-      errorMessage.includes('500') || 
-      errorMessage.includes('xhr error') || 
-      errorMessage.includes('fetch failed') ||
-      nestedErrorMessage.includes('500') ||
-      errorString.includes('500') ||
-      errorString.includes('xhr error');
-
-    if (retries > 0 && isTransientError) {
-      // Exponential backoff for quota errors
-      // Quota errors need more time to reset, but we cap it to keep it practical
-      const backoffFactor = isQuotaError ? 3 : 2;
-      let delay = INITIAL_RETRY_DELAY * Math.pow(backoffFactor, MAX_RETRIES - retries);
-      
-      // Cap the delay at 60 seconds for quota errors, 30 seconds for others
-      const maxDelay = isQuotaError ? 60000 : 30000;
-      delay = Math.min(delay, maxDelay);
-      
-      console.warn(`Transient error detected (${isQuotaError ? 'Quota' : 'Server'}). Retrying in ${Math.round(delay/1000)}s... (${retries} retries left)`);
-      await sleep(delay);
+    if (retries > 0 && error.status === 429) {
+      console.warn(`Rate limited. Retrying in 2 seconds... (\${retries} retries left)`);
+      await new Promise(resolve => setTimeout(resolve, 2000));
       return callWithRetry(fn, retries - 1);
     }
-
-    if (isQuotaError) {
-      throw new Error("QUOTA_EXCEEDED: โควตาการใช้งานเต็ม (API Quota Exceeded) กรุณารอสักครู่ หรือลองใส่ API Key ของตัวเองในเมนูตั้งค่า หรือเปิดโหมด 'ไม่สร้างรูปภาพ' เพื่อประหยัดโควตาครับ");
-    }
-
-    if (isPermissionError) {
-      throw new Error("PERMISSION_DENIED: กรุณาตรวจสอบ API Key ของคุณ หรือเชื่อมต่อ Paid API Key ในเมนูตั้งค่าเพื่อใช้งานฟีเจอร์นี้ (โดยเฉพาะการสร้างวิดีโอ)");
-    }
-
     throw error;
   }
 };
@@ -161,87 +73,23 @@ export const generateViralScript = async (params: GenerateParams): Promise<Viral
   const ai = new GoogleGenAI({ apiKey });
   const model = "gemini-3-flash-preview";
 
-  // ... (rest of the prompt construction remains the same)
-  const userContext = params.additionalDetails && params.additionalDetails.trim() !== ""
-    ? `\n    SPECIFIC USER CONTEXT (YOU MUST INCORPORATE THIS): "${params.additionalDetails}"\n    (The script must revolve around this specific context provided by the user.)`
-    : `\n    CONTEXT: Invent a creative situation where the object is expressing its thoughts based on the selected template.`;
-
   let templateInstruction = "";
-  switch (params.template) {
-    case ScriptTemplate.Roast:
-      templateInstruction = `
+  if (params.template.includes("Comedy")) {
+    templateInstruction = `
     Personality (สำคัญมาก):
-    - สิ่งของนี้ "มีชีวิต" และกำลัง "จิกกัด" หรือ "ขิง (Flex)" ใส่คนดู/เจ้าของ โดยตรงแบบตลกๆ
-    - Tone of Voice: กวนประสาท (Sarcastic), ขี้เล่น (Playful), ขวานผ่าซาก, หลงตัวเองขั้นสุด
-    - ภาษา: ต้องใช้คำแสลงวัยรุ่นไทย (Slang Thai) เพื่อความ Viral
-    - เนื้อหา: พูดถึงข้อดี/ข้อเสียของตัวเองแบบหลงตัวเอง หรือบ่นคนใช้ที่ไม่ดูแลรักษาแบบน่ารักๆ
-    - **ข้อห้ามเด็ดขาด**: ห้ามใช้คำหยาบคายรุนแรง (เช่น ไอ้สัส, เหี้ย, กู, มึง) ให้ใช้คำที่ดูซอฟต์แต่กวนประสาทแทน
-      `;
-      break;
-    case ScriptTemplate.EpicReview:
-      templateInstruction = `
-    Personality (สำคัญมาก):
-    - สิ่งของนี้ "มีชีวิต" และกำลัง "อวยยศ" ตัวเองหรือเจ้าของแบบเวอร์วังอลังการสุดๆ
-    - Tone of Voice: ตื่นเต้น (Excited), ยิ่งใหญ่ (Epic), ภูมิใจนำเสนอ, อวยไส้แตก
-    - ภาษา: ใช้คำศัพท์ที่ดูยิ่งใหญ่ อลังการ หรือคำฮิตวัยรุ่นที่ใช้ชมเชย (เช่น ปังมาก, ตัวมารดา, เลิศ)
-    - เนื้อหา: เล่าความสุดยอดของตัวเอง ประหนึ่งว่าเป็นของวิเศษที่ทุกคนต้องมี
-      `;
-      break;
-    case ScriptTemplate.SadStory:
+    - สิ่งของนี้ "มีชีวิต" และกำลังบ่นเรื่องราวของตัวเองแบบตลกขบขัน
+    - Tone of Voice: ประชดประชัน (Sarcastic), ตลก, จิกกัดมนุษย์
+    - ภาษา: ใช้ภาษาพูดวัยรุ่นไทย มีคำสร้อย เช่น "โอ้ยยย", "คือแบบ", "สภาพพพ"
+    - เนื้อหา: บ่นเรื่องที่ต้องเจอทุกวัน หรือพฤติกรรมแปลกๆ ของมนุษย์ที่ทำกับสิ่งของนี้
+    `;
+  } else if (params.template.includes("Drama")) {
       templateInstruction = `
     Personality (สำคัญมาก):
     - สิ่งของนี้ "มีชีวิต" และกำลังเล่าเรื่องราวสุดรันทดของตัวเอง
-    - Tone of Voice: เศ้ราสร้อย (Melancholic), ตัดพ้อ, น่าสงสาร, ดราม่าเรียกน้ำตา
-    - ภาษา: ใช้ภาษาที่สะเทือนอารมณ์ บีบคั้นหัวใจ
-    - เนื้อหา: เล่าถึงความเสียสละของตัวเอง หรือการถูกทอดทิ้ง ถูกใช้งานอย่างหนักหน่วงโดยไม่มีใครเห็นค่า
-      `;
-      break;
-    case ScriptTemplate.Horror:
-      templateInstruction = `
-    Personality (สำคัญมาก):
-    - สิ่งของนี้ "มีชีวิต" และมีความอาฆาตแค้น หรือมีความลับดำมืดซ่อนอยู่
-    - Tone of Voice: หลอน (Creepy), เย็นชา, ข่มขู่, ลึกลับ
-    - ภาษา: ใช้คำที่ทำให้รู้สึกขนลุก หวาดระแวง
-    - เนื้อหา: เล่าประวัติความสยองขวัญของตัวเอง หรือขู่เจ้าของว่าถ้าทิ้งขว้างจะเจออะไรดี
-      `;
-      break;
-    case ScriptTemplate.Educational:
-      templateInstruction = `
-    Personality (สำคัญมาก):
-    - สิ่งของนี้ "มีชีวิต" และสถาปนาตัวเองเป็นผู้เชี่ยวชาญ (กูรู) ที่มาให้ความรู้แบบกาวๆ หรือเรื่องจริงผสมความฮา
-    - Tone of Voice: มั่นใจ (Confident), ดูฉลาดแต่แอบกาว, เนิร์ดๆ
-    - ภาษา: ใช้ศัพท์วิชาการปนศัพท์วัยรุ่น หรือการเปรียบเทียบที่คาดไม่ถึง
-    - เนื้อหา: อธิบายกลไกการทำงานของตัวเองแบบเว่อร์ๆ หรือให้ Fact ที่คนไม่เคยรู้ (แต่แอบตลก)
-      `;
-      break;
-    case ScriptTemplate.Savage:
-      templateInstruction = `
-    Personality (สำคัญมาก):
-    - สิ่งของนี้ "มีชีวิต" และกำลัง "วิจารณ์" หรือ "บ่น" ใส่คนดู/เจ้าของ แบบตรงไปตรงมาและดุดัน
-    - Tone of Voice: ดุดัน (Aggressive), ก้าวร้าวเล็กน้อย (Bold), ไม่สนโลก, เดือดจัดแบบตลก
-    - ภาษา: ใช้คำที่ดูแรงแต่ไม่หยาบคาย (เช่น แก, นาย, เรา, หรือคำแสลงที่กวนๆ)
-    - เนื้อหา: วิจารณ์พฤติกรรมแย่ๆ ของคนใช้ หรือบ่นสังคมแบบตรงไปตรงมา
-    - **ข้อห้ามเด็ดขาด**: ห้ามใช้คำหยาบคายรุนแรง (เช่น ไอ้สัส, เหี้ย, กู, มึง) ให้ใช้คำที่ดูดุดันแต่สุภาพกว่าแทน
-      `;
-      break;
-    case ScriptTemplate.Conspiracy:
-      templateInstruction = `
-    Personality (สำคัญมาก):
-    - สิ่งของนี้ "มีชีวิต" และเชื่อว่าตัวเองเป็นส่วนหนึ่งของทฤษฎีสมคบคิดระดับโลก
-    - Tone of Voice: หวาดระแวง (Paranoid), ลึกลับ, กระซิบกระซาบ, จริงจังแบบกาวๆ
-    - ภาษา: ใช้คำศัพท์แนวสืบสวน หรือการเชื่อมโยงที่ดูไร้สาระแต่พูดซะจริงจัง
-    - เนื้อหา: เล่าว่าตัวเองถูกสร้างมาเพื่อควบคุมมนุษย์ หรือมีความลับของจักรวาลซ่อนอยู่
-      `;
-      break;
-    case ScriptTemplate.Philosophical:
-      templateInstruction = `
-    Personality (สำคัญมาก):
-    - สิ่งของนี้ "มีชีวิต" และชอบตั้งคำถามเชิงปรัชญากับการมีอยู่ของตัวเอง
-    - Tone of Voice: ลึกซึ้ง (Profound), ปลงตก, นิ่งสงบ, เหมือนคนบรรลุธรรม
-    - ภาษา: ใช้คำคม หรือประโยคที่ฟังดูหล่อแต่จริงๆ แล้วเป็นแค่สิ่งของธรรมดา
-    - เนื้อหา: เปรียบเทียบชีวิตตัวเองกับสัจธรรมของโลกมนุษย์
-      `;
-      break;
+    - Tone of Voice: เศร้าสร้อย (Melancholic), ตัดพ้อ, น่าสงสาร, ดราม่าเรียกน้ำตา
+    - ภาษา: ใช้ภาษาที่สะเทือนอารมณ์ บีบคั้นหัวใจ เน้นคำที่แสดงความน้อยเนื้อต่ำใจ
+    - เนื้อหา: เล่าถึงความเสียสละของตัวเอง หรือการถูกทอดทิ้ง ถูกใช้งานอย่างหนัก
+    `;
   }
 
   let styleInstruction = "";
@@ -253,50 +101,23 @@ export const generateViralScript = async (params: GenerateParams): Promise<Viral
     คุณคือ Creative Director มือหนึ่งของ TikTok/Reels ที่เชี่ยวชาญการทำคลิปไวรัล
     
     Task: สร้างสคริปต์วิดีโอสั้นสำหรับสิ่งของ: "${params.objectName}"
-    รูปแบบ/ธีม (Template): ${params.template}
-    โครงสร้างสคริปต์ (Framework): ${params.framework}
-    จำนวนฉาก: ${params.sceneCount} ฉาก
-    สไตล์ภาพ: ${params.style}
-    อารมณ์หลักของตัวละคร: ${params.emotion}
-    เปิดใช้งานเสียงพากย์: ${params.enableVoiceover ? 'ใช่' : 'ไม่ใช่'}
-    ${params.enableVoiceover ? `เพศของเสียงพากย์: ${params.voiceGender}\n    โทนเสียงพากย์: ${params.voiceTone}` : ''}
-    ${userContext}
     
     ${templateInstruction}
     ${styleInstruction}
-
-    **FRAMEWORK INSTRUCTION:**
-    You MUST follow the logic of the selected framework: ${params.framework}
-    - If PAS: Start with the problem, agitate it, then provide the solution.
-    - If AIDA: Grab attention, build interest, create desire, and call to action.
-    - If BAB: Show the 'Before' state, then the 'After' state, and the 'Bridge' that connects them.
-    - If HSP: Hook the viewer, tell a story, and give a payoff.
-    - If HPL: Hook, Payoff, and then loop back to the start.
-    - If HRT: Hook, complain/rant, then a quick lesson.
-    - If CPV: Point out a problem, make a promise, then ask for a rating/score.
-    - If HTE: Hook, teach something, then leave an emotional impact.
-    - If SMR: Destroy a myth and reveal the truth.
-    - If SBS: Hook, then provide step-by-step instructions.
-    - If Auto: AI decides the best viral structure.
-
-    **🔥 VIRAL VIDEO SECRETS (MASTER PROMPT RULES - MUST APPLY):**
-    1. **HOOK (Scene 1 - First 3 Seconds)**: NEVER start with "Hello" or "Today I will...". You MUST use one of these hooks:
-       - Negative Hook: "หยุดทำแบบนี้ถ้าไม่อยาก..." (Stop doing this if you don't want...)
-       - Result First: Show the shocking result immediately.
-       - Controversial: "ความเชื่อเรื่อง... คือเรื่องโกหก!" (The belief about X is a lie!)
-    2. **STRUCTURE (8-Second Rule & Visual Hooks)**: Every scene must have a distinct visual hook.
-       - Scene 1: Big Action (e.g., throwing something, shouting, pointing aggressively).
-       - Scene 2: Zoom In (extreme close-up on the face, emphasizing emotion).
-       - Scene 3: Side View (showing effort or a different perspective).
-       - Scene 4 (if applicable): Text Overload (visuals filled with stats/numbers/text to make viewers pause).
-    3. **PERSONALIZATION**: Use highly specific data and details, not generic statements. (e.g., instead of "I want to lose weight", use "I dropped from 80kg to 65kg in 3 months by cutting out liquid calories").
-    4. **MAGIC KEYWORDS TO EMBODY**:
-       - "Pattern Interrupt": Add unexpected twists or visual changes.
-       - "No Fluff": Cut all unnecessary words. 100% pure value/entertainment.
-       - "Emotional Trigger": Use words that provoke strong feelings (anger, inspiration, realization).
-       - "Retention Focused": End each scene with a cliffhanger or reason to watch the next.
-    5. **THE LOOP (Final Scene)**: The final scene's dialogue and action MUST seamlessly loop back into the beginning of Scene 1. The last word of the video should connect perfectly to the first word of the video to create an infinite loop.
-
+    
+    **VIRAL SCRIPT FORMULA (MUST FOLLOW STRICTLY):**
+    1. **THE HOOK (Scene 1)**: Must grab attention in the first 3 seconds.
+       - Visual: Extreme close-up or unexpected action.
+       - Audio: A bold statement, a weird question, or an angry shout.
+       - Examples: "หยุดเลื่อน! ถ้าคุณยังใช้ฉันแบบผิดๆ", "รู้ไหมว่าฉันต้องทนอะไรบ้าง?", "นี่คือสิ่งที่พวกมนุษย์ไม่เคยรู้..."
+    2. **THE ESCALATION (Scene 2-3)**: Build the emotion or the joke.
+       - Visual: Show the struggle, the ridiculousness, or the "truth".
+       - Audio: Explain the pain, the conspiracy, or the savage truth with high energy.
+    3. **THE CLIMAX/PUNCHLINE (Scene 4)**: The peak of the emotion.
+       - Visual: Dramatic lighting, intense action.
+       - Audio: The most memorable line.
+    4. **THE LOOP (Final Scene)**: The final scene's dialogue and action MUST seamlessly loop back into the beginning of Scene 1. The last word of the video should connect perfectly to the first word of the video to create an infinite loop.
+    
     **HEADLINE INSTRUCTION:**
     - If "Include Headline" is true: The FIRST scene's 'image_prompt' MUST include a large, bold, viral Thai headline text overlay that summarizes the video's hook.
     - **IMPORTANT FOR TEXT RENDERING:** Describe the text as: "Large, bold, simple Thai typography rendered directly on the image AT THE TOP OF THE FRAME, high contrast against background, clean font, easy to read".
@@ -312,15 +133,12 @@ export const generateViralScript = async (params: GenerateParams): Promise<Viral
     แต่ให้ใช้เทคนิค "เลี่ยงบาลี" โดยการเปรียบเทียบ (Metaphor), ใช้คำอุปมาอุปไมย, หรือเปลี่ยนบริบทให้เป็นเรื่องตลก/แฟนตาซี/ล้อเลียน ที่ยังคงอารมณ์เดิมแต่ "ปลอดภัย" ต่อการตรวจสอบ 
     เช่น เปลี่ยนจาก "ฆ่า" เป็น "กำจัดจุดอ่อน", เปลี่ยนจาก "ด่าทอ" เป็น "วิพากษ์วิจารณ์อย่างมีศิลปะ" เป็นต้น
     
-    การปรับบุคลิกและคำสรรพนามตามอารมณ์ (Emotion Alignment Rules):
-    - "${CharacterEmotion.Angry}" (โมโห): ด่ากราดเหมือนระเบิดลง หรือใส่อารมณ์รุนแรง อนุญาตให้ใช้คำหยาบแบบวัยรุ่นได้ (เช่น กู, มึง, ไอ้...)
-    - "${CharacterEmotion.Sarcastic}" (ด่านิดๆ): เน้นจิกกัดแบบกวนๆ **ต้องใช้สรรพนามแทนตัวว่า "ข้า" และแทนคนดูว่า "เอ็ง" เท่านั้น**
-    - "${CharacterEmotion.Cute}" (น่ารัก): พูดเสียงสอง ทำตัวแบ๊วๆ แต่ปากแจ๋ว **ห้ามใช้คำหยาบคาย (ห้ามใช้ กู/มึง)** ให้ใช้คำแทนตัวว่า หนู/เค้า/น้อง แทน
-    - "${CharacterEmotion.Professional}" (มืออาชีพ): พูดเหมือนกูรูที่มีอีโก้สูงเสียดฟ้า มั่นหน้า **ห้ามใช้คำหยาบคาย (ห้ามใช้ กู/มึง)** ใช้ภาษาสุภาพที่ดูหยิ่งๆ
-    - "${CharacterEmotion.Vulgar}" (หยาบดิบ): ด่ากราดแบบไม่ยั้ง หยาบคายขั้นสุด อนุญาตให้ใช้คำหยาบแบบจัดเต็ม (เช่น กู, มึง, ไอ้สัส, เหี้ย)
-    - "${CharacterEmotion.Depressed}" (ซึมเศร้า/สิ้นหวัง): พูดเสียงเนือยๆ ตัดพ้อชีวิต ร้องไห้ฟูมฟาย สิ้นหวังกับทุกสิ่ง
-    - "${CharacterEmotion.Psychotic}" (โรคจิต/หลอน): หัวเราะแบบบ้าคลั่ง พูดจาไม่รู้เรื่อง สลับอารมณ์ไปมา น่ากลัวแบบแปลกๆ
-    - "${CharacterEmotion.Painful}" (เจ็บปวด/ทรมาน): บิดเบี้ยวด้วยความเจ็บปวด หน้าตาเหยเก ร้องโอดครวญเหมือนกำลังจะพังทลาย
+    VISUAL REQUIREMENT (IMPORTANT):
+    The object MUST be ANTHROPOMORPHIC (Have a FACE, EYES, and a MOUTH). 
+    It must look like a character from a Pixar/Disney movie.
+    It needs to express emotions through facial expressions.
+
+�ือนกำลังจะพังทลาย
     
     VISUAL REQUIREMENT (IMPORTANT):
     The object MUST be ANTHROPOMORPHIC (Have a FACE, EYES, and a MOUTH). 
@@ -614,6 +432,7 @@ export interface CrossoverData {
 export const generateCrossoverDetailed = async (params: {
   userDesc: string;
   charDesc: string;
+  charPersonality?: string;
   location: string;
   action: string;
   atmosphere: string;
@@ -624,45 +443,66 @@ export const generateCrossoverDetailed = async (params: {
   enableVoiceover?: boolean;
   voiceGender?: string;
   voiceTone?: string;
+  sequenceIndex?: number;
+  totalScenes?: number;
+  isVlogJourney?: boolean;
 }): Promise<CrossoverData> => {
   const apiKey = getEffectiveApiKey();
   const ai = new GoogleGenAI({ apiKey });
   const model = "gemini-3-flash-preview";
+
+  const sequenceContext = params.sequenceIndex !== undefined && params.totalScenes !== undefined
+    ? `\n    SEQUENCE CONTEXT: This is scene ${params.sequenceIndex + 1} of ${params.totalScenes}. 
+       ${params.isVlogJourney ? `VLOG JOURNEY MODE: The user is on a journey meeting multiple characters. 
+       In this specific scene, the user is interacting with ${params.charDesc} ${params.charPersonality ? `(Personality: ${params.charPersonality})` : ""}. 
+       If this is NOT the first scene, the video_prompt MUST describe a smooth, realistic transition. 
+       DO NOT use "warping" or sudden jumps. 
+       Instead, use a "PAN RIGHT" camera movement from the previous character/location to find ${params.charDesc}. 
+       The camera should feel like a handheld selfie stick or POV vlog camera, showing the movement and the environment during the pan.` : `If this is not the first scene, describe the transition or movement from the previous character/location to this one.`}
+       Make it feel like a continuous vlog or journey.`
+    : "";
 
   const prompt = `
     คุณคือ AI Prompt Engineer ผู้เชี่ยวชาญการสร้าง Prompt สำหรับ Image Generation และ Video Generation (Veo)
     Task: สร้าง Prompt สำหรับฉาก "Crossover" ที่มีตัวละคร 2 ตัว (Subject 1 และ Subject 2) อยู่ในเฟรมเดียวกัน
     
     ข้อมูลอินพุต:
-    - Subject 1 (ตัวคุณ): ${params.userDesc || "คนทั่วไป"} ${params.userImage ? "(มีรูปอ้างอิง)" : ""}
+    - Subject 1 (ตัวคุณ): ${params.userDesc || "A person"} ${params.userImage ? "(มีรูปอ้างอิง)" : ""}
     - Subject 2 (ตัวละคร/ดารา): ${params.charDesc} ${params.charImage ? "(มีรูปอ้างอิง)" : ""}
+    - นิสัย/สไตล์ Subject 2: ${params.charPersonality || "ตามบุคลิกจริงของตัวละคร"}
     - สถานที่: ${params.location}
     - การกระทำ: ${params.action}
     - บรรยากาศ: ${params.atmosphere}
     - ช่วงเวลา: ${params.timeOfDay}
     - สไตล์ภาพ: ${params.style}
+    ${sequenceContext}
 
-    **กฎการสร้าง Prompt:**
+    **กฎการสร้าง Prompt (เน้นความสมจริงและเอฟเฟกต์):**
     1. **image_prompt**: 
        - ต้องบรรยายลักษณะของทั้ง 2 คนให้ชัดเจนและคงที่
-       - บรรยากาศ สถานที่ และการปฏิสัมพันธ์ต้องดูเป็นธรรมชาติ
+       - **CHARACTER PERSONALITY (CRITICAL)**: วิเคราะห์ชื่อและลักษณะของ Subject 2 (${params.charDesc}) รวมถึงนิสัย (${params.charPersonality || "ตามบุคลิกจริง"}) และต้องให้แสดงออก (Expression), ท่าทาง (Pose), และการปฏิสัมพันธ์ (Interaction) ที่ตรงตามบุคลิกจริงของตัวละครนั้นๆ อย่างเคร่งครัด (เช่น ถ้าเป็น Jason Voorhees ต้องดูสุขุม นิ่งเงียบ น่าเกรงขาม ไม่ยิ้มแย้มหรือทำท่าทางร่าเริงผิดปกติ, ถ้าเป็นตัวละครที่ดุดันก็ต้องดูดุดัน)
+       - **HYPER-REALISM & CINEMATIC EFFECTS**: เพิ่มรายละเอียดเกี่ยวกับผิวสัมผัสที่สมจริง (Subsurface scattering, realistic skin pores), แสงเงาที่ตกกระทบแบบ Ray-tracing (Dynamic lighting, Ray-traced reflections), เอฟเฟกต์บรรยากาศที่ลึกซึ้ง (Volumetric fog, Light bloom, Dust particles dancing in light, Lens flare, Depth of field/Bokeh)
+       - บรรยากาศ สถานที่ และการปฏิสัมพันธ์ต้องดูเป็นธรรมชาติและมีความสมจริงสูง (Photorealistic, 8k resolution, Masterpiece)
        - สไตล์ภาพ: ${params.style}
        - ต้องจบด้วย --ar 9:16
        - หากมีรูปอ้างอิง ให้ระบุว่า "looks exactly like the provided reference image" สำหรับคนนั้นๆ
+       - บรรยายการจัดแสง (Lighting) เช่น Cinematic lighting, Volumetric lighting, Rim light เพื่อให้ตัวละครดูโดดเด่น
 
     2. **video_prompt**: 
-       - บรรยายการเคลื่อนไหวของกล้องและตัวละคร (เช่น เดินเข้ามาเซลฟี่, หันมามองกล้อง, กล้องแพนรอบๆ)
-       ${params.enableVoiceover ? `- ต้องรวมบทพูดภาษาไทยสั้นๆ (Thai Voiceover) ที่เข้ากับสถานการณ์
+       - บรรยายการเคลื่อนไหวของกล้องและตัวละครอย่างละเอียด (เช่น เดินเข้ามาเซลฟี่, หันมามองกล้องพร้อมรอยยิ้ม, กล้องแพนรอบๆ แบบ Cinematic)
+       - **WALK TO SELFIE ACTION**: หากอยู่ในโหมด Vlog Journey ให้บรรยายการ "เดินไปหา" และ "โพสท่าถ่ายรูป" ร่วมกันอย่างเป็นธรรมชาติ
+       - **CHARACTER CONSISTENCY**: การเคลื่อนไหวและปฏิกิริยาของ Subject 2 ต้องสมจริงตามบุคลิก (In-character) ห้ามทำท่าทางที่ขัดกับสไตล์ดั้งเดิมของตัวละครนั้นๆ โดยเด็ดขาด
+       - **DYNAMIC MOVEMENT**: หากเป็นฉากต่อเนื่อง ให้บรรยายการเดิน (Walking), การเคลื่อนที่ (Moving), หรือการเปลี่ยนมุมกล้องที่ดูเหมือนเรากำลังถ่าย Vlog จริงๆ (Handheld camera shake, realistic focus hunting)
+       ${params.enableVoiceover ? `- ต้องรวมบทพูดภาษาไทยสั้นๆ (Thai Voiceover) ที่เข้ากับสถานการณ์และบุคลิกของตัวละคร
        - เพศของเสียงพากย์: ${params.voiceGender}
        - โทนเสียงพากย์: ${params.voiceTone}
        - รูปแบบ: "[Visual Description & Movement]. Thai voiceover says: \\"[Thai Script]\\""` : `- ไม่ต้องมีบทพูด (No voiceover)`}
 
     **🔥 VIRAL CROSSOVER SECRETS (MASTER PROMPT RULES - MUST APPLY TO video_prompt):**
     1. **HOOK (First 3 Seconds)**: The video must start with a strong visual or verbal hook.
-       - e.g., A sudden reveal of the crossover character, a shocking statement, or an unexpected action.
     2. **STRUCTURE (Visual Hooks)**: Use dynamic camera movements (Zoom In, Side View, Fast Pan) to keep it engaging.
-    3. **PERSONALIZATION**: Make the interaction specific to the characters involved (e.g., specific catchphrases or iconic moves).
-    4. **MAGIC KEYWORDS TO EMBODY**: "Pattern Interrupt" (unexpected twist), "Emotional Trigger" (hype, shock, comedy).
+    3. **PERSONALIZATION**: Make the interaction specific to the characters involved.
+    4. **MAGIC KEYWORDS TO EMBODY**: "Pattern Interrupt", "Emotional Trigger", "Cinematic Atmosphere", "Realistic Interaction".
     5. **THE LOOP**: The final action or dialogue should seamlessly loop back to the beginning of the video.
 
     Output ต้องเป็น JSON เท่านั้น:
@@ -1086,36 +926,64 @@ export const analyzeUrlToPromptDetailed = async (urlContent: string): Promise<De
   });
 };
 
-export const generateFigureImage = async (imageBase64: string): Promise<string> => {
+export const generateFigureImage = async (imageBase64?: string, name?: string, style: 'Figure' | 'Trompe' | 'Animal' = 'Figure'): Promise<FigureData> => {
   const apiKey = getEffectiveApiKey();
   const ai = new GoogleGenAI({ apiKey });
-  const model = 'gemini-2.5-flash-image';
+  const model = 'gemini-3.1-flash-image-preview';
 
-  const basePrompt = `Create a 1/7 scale commercialized figure of the character in the illustration, in a hyper-detailed, photorealistic style and environment. Place the figure on a computer desk, using a circular transparent acrylic base without any text. On the iMac screen, display the Blender modeling process of the figure with a crystal-clear interface. Next to the computer screen, place a TAKARA-TOMY-style toy packaging box printed with the original artwork, ensuring sharp and vibrant details. Render the scene in ultra-high resolution 4K with realistic lighting, soft ambient shadows, and subtle reflections. Ensure hyper-detailed textures on the figure, packaging, and environment, with clean, crisp visuals free of noise and artifacts. Capture the scene in a close-up medium shot to emphasize the figure’s intricate details and the clarity of the iMac screen and packaging.`;
+  let basePrompt = '';
+  
+  if (style === 'Figure') {
+    const subject = name || "a legendary cyber-samurai with glowing neon armor";
+    basePrompt = `Create a 1/7 scale commercialized figure of ${subject} ${imageBase64 ? 'based on the illustration' : ''}, in a hyper-detailed, photorealistic style and environment. Place the figure on a computer desk, using a circular transparent acrylic base without any text. On the iMac screen, display the Blender modeling process of the figure with a crystal-clear interface. Next to the computer screen, place a TAKARA-TOMY-style toy packaging box printed with the original artwork, ensuring sharp and vibrant details. Render the scene in ultra-high resolution 4K with realistic lighting, soft ambient shadows, and subtle reflections. Ensure hyper-detailed textures on the figure, packaging, and environment, with clean, crisp visuals free of noise and artifacts. Capture the scene in a close-up medium shot to emphasize the figure’s intricate details and the clarity of the iMac screen and packaging.`;
+  } else if (style === 'Trompe') {
+    const subject = name || "a majestic mythical dragon with iridescent scales";
+    basePrompt = `A stunning Trompe L'oeil 3D composition, where ${imageBase64 ? `the subject in the uploaded image` : subject} appears to physically tear through a clean white drawing paper and emerge from a graphite sketch into the real world. The subject's upper body is fully rendered in hyper-realistic color and texture, while the lower body remains a 2D pencil sketch on paper. Shot from an aerial (top-down) perspective using a 24mm lens to capture the entire drawing desk environment, including oversized pencils and erasers scattered around. The lighting is a blend of flat studio light for the paper area and dramatic side lighting with volumetric effects for the emerging 3D figure, casting realistic shadows that fall back onto the sketch. Hyper-detailed, 8k resolution, cinematic lighting.`;
+  } else {
+    const subject = name || "a majestic white tiger with glowing blue eyes";
+    basePrompt = `Professional animal photography of ${imageBase64 ? `the animal in the uploaded image` : subject}, featuring glowing eyes and surrounded by swirling smoke and cinematic light effects. This is a full-body shot photography from a front view, captured as a macro lens portrait with a high-resolution digital camera. The image must showcase hyper-realistic texture of the animal's fur, skin, or scales. Apply professional color grading, dramatic atmosphere, ultra-high resolution 4K, and realistic lighting.`;
+  }
 
   return callWithRetry(async () => {
-    const base64Data = imageBase64.split(',')[1] || imageBase64;
-    
+    const contents: any[] = [];
+    if (imageBase64) {
+      const base64Data = imageBase64.split(',')[1] || imageBase64;
+      contents.push({
+        inlineData: {
+          data: base64Data,
+          mimeType: 'image/png',
+        },
+      });
+    }
+    contents.push({ text: basePrompt });
+
     const response = await ai.models.generateContent({
       model,
-      contents: {
-        parts: [
+      contents: { parts: contents },
+      config: {
+        imageConfig: {
+          aspectRatio: "1:1",
+          imageSize: "1K"
+        },
+        tools: [
           {
-            inlineData: {
-              data: base64Data,
-              mimeType: 'image/png',
+            googleSearch: {
+              searchTypes: {
+                webSearch: {},
+                imageSearch: {},
+              }
             },
           },
-          {
-            text: basePrompt,
-          },
         ],
-      },
+      }
     });
 
     for (const part of response.candidates?.[0]?.content?.parts || []) {
       if (part.inlineData) {
-        return `data:image/png;base64,${part.inlineData.data}`;
+        return {
+          url: `data:image/png;base64,${part.inlineData.data}`,
+          prompt: basePrompt
+        };
       }
     }
     throw new Error("No image data found in response");
@@ -1222,8 +1090,8 @@ export const generateMascotDNA = async (params: MascotParams): Promise<MascotDat
 
     **ขั้นตอนที่ 1: สร้าง Master DNA Prompt**
     เขียนรายละเอียดหน้าตาให้ชัดเจนที่สุด โครงสร้าง: [เพศ/อายุ] + [ทรงผม/สีผม] + [จุดเด่นบนหน้า] + [สไตล์ภาพ]
-    ตัวอย่าง (ถ้าเลือก Realistic): (Realistic handsome young man, cool black hair, round glasses, small goatee on chin, confident smile, photorealistic style)
-    ตัวอย่าง (ถ้าเลือก 3D): (Mascot handsome young man, cool black hair, round glasses, small goatee on chin, confident smile, Pixar 3D style)
+    ตัวอย่าง (ถ้าสไตล์มีคำว่า Realistic): (Realistic handsome young man, cool black hair, round glasses, small goatee on chin, confident smile, photorealistic style)
+    ตัวอย่าง (ถ้าสไตล์มีคำว่า 3D): (Mascot handsome young man, cool black hair, round glasses, small goatee on chin, confident smile, Pixar 3D style)
 
     **ขั้นตอนที่ 2: สร้าง Character Sheet Prompt**
     สร้างคำสั่งสำหรับสร้างภาพเดียวที่มีครบทุกมุม (Front, Side, Back) เพื่อใช้เป็นแม่พิมพ์
@@ -1277,11 +1145,11 @@ export const generateMascotScene = async (masterDna: string, action: string, sty
     [Master DNA เดิม (แปลเป็นอังกฤษ)] + [ชุดใหม่/การกระทำ/สถานที่] + [สไตล์ภาพ: ${style}]
     
     ข้อควรระวัง: 
-    - ถ้าสไตล์คือ Realistic ห้ามใช้คำว่า "Mascot" หรือ "Cartoon" หรือ "Animation" ใน Prompt เด็ดขาด ให้ใช้คำแนว "Photorealistic", "Hyper-realistic", "Real person" แทน
-    - ถ้าสไตล์คือ 3D Animation ให้ใช้คำแนว "Pixar style", "Disney style", "3D Render"
+    - ถ้าสไตล์มีคำว่า Realistic ห้ามใช้คำว่า "Mascot" หรือ "Cartoon" หรือ "Animation" ใน Prompt เด็ดขาด ให้ใช้คำแนว "Photorealistic", "Hyper-realistic", "Real person" แทน
+    - ถ้าสไตล์มีคำว่า 3D Animation ให้ใช้คำแนว "Pixar style", "Disney style", "3D Render"
     
-    ตัวอย่าง (ถ้า Realistic): (Realistic handsome young man, cool black hair, round glasses, small goatee on chin) wearing a tuxedo, standing and presenting work in a modern office, photorealistic, 8k, highly detailed.
-    ตัวอย่าง (ถ้า 3D): (Mascot handsome young man, cool black hair, round glasses, small goatee on chin) wearing a tuxedo, standing and presenting work in a modern office, Pixar 3D style, high resolution.
+    ตัวอย่าง (ถ้าสไตล์มีคำว่า Realistic): (Realistic handsome young man, cool black hair, round glasses, small goatee on chin) wearing a tuxedo, standing and presenting work in a modern office, photorealistic, 8k, highly detailed.
+    ตัวอย่าง (ถ้าสไตล์มีคำว่า 3D): (Mascot handsome young man, cool black hair, round glasses, small goatee on chin) wearing a tuxedo, standing and presenting work in a modern office, Pixar 3D style, high resolution.
 
     Output: ให้ตอบเฉพาะ Prompt ภาษาอังกฤษ 1 ย่อหน้าสั้นๆ สำหรับเจนภาพ ห้ามมีข้อความอื่นปน และต้องจบด้วย --ar 3:4
   `;
@@ -1434,6 +1302,197 @@ export const generateVlogTour = async (params: TourParams): Promise<TourData> =>
 
     if (response.text) {
       return JSON.parse(response.text) as TourData;
+    }
+    throw new Error("No response text generated");
+  });
+};
+
+export const generateQuickMovie = async (concept: string, style: VisualStyle = VisualStyle.Cinematic): Promise<CinematicData> => {
+  const apiKey = getEffectiveApiKey();
+  const ai = new GoogleGenAI({ apiKey });
+  const model = "gemini-3-flash-preview";
+
+  const prompt = `
+    คุณคือ AI Movie Director ผู้เชี่ยวชาญการสร้างคลิปสั้น Viral (8-16 วินาที) ที่เน้นความง่ายแต่ทรงพลัง
+    Task: สร้าง "Quick Movie Script" สำหรับวิดีโอ 2 ฉาก (ฉากละ 8 วินาที รวม 16 วินาที)
+    
+    คอนเซปต์: "${concept}"
+    สไตล์: ${style}
+
+    **🔥 VIRAL MOVIE SECRETS (MUST APPLY):**
+    1. **HOOK (Scene 1 - First 3 Seconds)**: ต้องมี Hook ที่แรงทันที ไม่ว่าจะเป็นภาพที่น่าตกใจ หรือประโยคเปิดที่ทำให้คนหยุดดู
+    2. **VISUAL CONTINUITY**: บรรยายรายละเอียดของตัวละครหลักหรือวัตถุหลัก (Main Subject) และสภาพแวดล้อม (Environment) อย่างละเอียด เพื่อให้ AI เจนภาพได้เหมือนกันทุกฉาก
+    3. **THE LOOP**: ฉากจบของฉากที่ 2 ต้องสามารถวนกลับมาเริ่มฉากที่ 1 ได้อย่างแนบเนียน (Seamless Loop)
+    4. **EMOTIONAL PAYOFF**: ฉากที่ 2 ต้องมีจุดพีคหรือบทสรุปที่ทิ้งอารมณ์ให้คนดู
+
+    **กฎการสร้าง (STRICT RULES):**
+    1. **Title**: ชื่อเรื่องภาษาไทยสั้นๆ เท่ๆ
+    2. **Overall Description**: บรรยายภาพรวมสั้นๆ (ภาษาอังกฤษ)
+    3. **Visual Consistency**: บรรยายรายละเอียดของตัวละครหลักและสภาพแวดล้อมอย่างละเอียด (ภาษาอังกฤษ)
+    4. **Scenes**: ต้องมี 2 ฉาก (Scene 1: 0.0-8.0s, Scene 2: 8.0-16.0s)
+       - **description**: บรรยายเหตุการณ์สั้นๆ (ภาษาอังกฤษ)
+       - **voiceover**: บทพูดหรือเสียงบรรยายสั้นๆ (ภาษาไทย)
+       - **image_prompt**: พ้อมสำหรับเจนภาพ Master Frame (ภาษาอังกฤษ) ต้องจบด้วย --ar 9:16 และต้องรวมรายละเอียดจาก Visual Consistency เข้าไปด้วย
+       - **video_prompt**: พ้อมสำหรับเจนวิดีโอ (ภาษาอังกฤษ) โดยใช้รูปแบบ Master Prompt:
+         "[Visual Description & Movement]. Thai voiceover says: \"[Thai Script]\""
+         (หากไม่มีบทพูด ให้ตัดส่วน Thai voiceover says ออก)
+    5. **Negative Prompt**: สิ่งที่ไม่ต้องการสั้นๆ
+
+    Output ต้องเป็น JSON เท่านั้น:
+    {
+      "title": "...",
+      "overall_description": "...",
+      "visual_consistency": "...",
+      "scenes": [
+        {
+          "scene_number": 1,
+          "time_range": "0.0-8.0 seconds",
+          "description": "...",
+          "voiceover": "...",
+          "image_prompt": "...",
+          "video_prompt": "..."
+        },
+        {
+          "scene_number": 2,
+          "time_range": "8.0-16.0 seconds",
+          "description": "...",
+          "voiceover": "...",
+          "image_prompt": "...",
+          "video_prompt": "..."
+        }
+      ],
+      "negative_prompt": "..."
+    }
+  `;
+
+  return callWithRetry(async () => {
+    const response = await ai.models.generateContent({
+      model,
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            title: { type: Type.STRING },
+            overall_description: { type: Type.STRING },
+            visual_consistency: { type: Type.STRING },
+            scenes: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  scene_number: { type: Type.INTEGER },
+                  time_range: { type: Type.STRING },
+                  description: { type: Type.STRING },
+                  voiceover: { type: Type.STRING },
+                  image_prompt: { type: Type.STRING },
+                  video_prompt: { type: Type.STRING }
+                },
+                required: ["scene_number", "time_range", "description", "voiceover", "image_prompt", "video_prompt"]
+              }
+            },
+            negative_prompt: { type: Type.STRING }
+          },
+          required: ["title", "overall_description", "visual_consistency", "scenes", "negative_prompt"]
+        }
+      }
+    });
+
+    if (response.text) {
+      return JSON.parse(response.text) as CinematicData;
+    }
+    throw new Error("No response text generated");
+  });
+};
+
+export const generateCinematicPrompt = async (params: CinematicParams): Promise<CinematicData> => {
+  const apiKey = getEffectiveApiKey();
+  const ai = new GoogleGenAI({ apiKey });
+  const model = "gemini-3-flash-preview";
+
+  const prompt = `
+    คุณคือ AI Prompt Engineer ผู้เชี่ยวชาญการสร้างบทภาพยนตร์และโฆษณาระดับโลก (World-class Cinematic Director)
+    Task: สร้าง "Master Prompt" สำหรับวิดีโอ (Video AI) โดยใช้โครงสร้างที่กำหนดให้
+    
+    คอนเซปต์: "${params.concept}"
+    สไตล์: ${params.style}
+    รวมเวลา: ${params.duration} วินาที (แบ่งเป็น ${params.sceneCount} ฉาก ฉากละ ${params.duration / params.sceneCount} วินาที)
+
+    **🔥 VIRAL MOVIE SECRETS (MUST APPLY):**
+    1. **HOOK (Scene 1)**: ต้องมี Hook ที่ดึงดูดสายตาทันที (Visual Hook)
+    2. **VISUAL CONSISTENCY**: บรรยายลักษณะของตัวละคร/วัตถุหลักให้คงที่ตลอดทุกฉาก
+    3. **DYNAMIC MOTION**: บรรยายการเคลื่อนไหวของกล้อง (Camera Movement) ให้ดูเป็นมืออาชีพ
+    4. **THE LOOP**: ฉากสุดท้ายต้องสามารถวนกลับมาเริ่มฉากแรกได้
+
+    **โครงสร้างที่ต้องทำตาม (MUST FOLLOW STRUCTURE):**
+    1. **Title**: ชื่อเรื่องภาษาไทยที่น่าสนใจ
+    2. **Overall Description**: ประโยคเปิดที่บรรยายภาพรวม (เหมือนตัวอย่าง: "One person appears on screen, @, [TIME] seconds, top-tier [THEME] quality, cinematic shots...")
+    3. **Visual Consistency**: บรรยายรายละเอียดของตัวละครหลักและสภาพแวดล้อมอย่างละเอียด (ภาษาอังกฤษ)
+    4. **Scenes**: แบ่งเป็น ${params.sceneCount} ฉาก โดยแต่ละฉากต้องระบุ:
+       - **time_range**: ช่วงเวลา (เช่น 0.0-8.0 seconds)
+       - **description**: บรรยายเหตุการณ์ในฉากนั้นแบบละเอียด (ภาษาอังกฤษ)
+       - **voiceover**: บทพูดหรือเสียงบรรยายสั้นๆ (ภาษาไทย)
+       - **image_prompt**: พ้อมสำหรับเจนภาพนิ่ง (Master Frame) ของฉากนั้น (ภาษาอังกฤษ) ต้องจบด้วย --ar 9:16 และต้องรวมรายละเอียดจาก Visual Consistency เข้าไปด้วย
+       - **video_prompt**: พ้อมสำหรับเจนวิดีโอของฉากนั้น (ภาษาอังกฤษ) โดยใช้รูปแบบ Master Prompt:
+         "[Visual Description & Movement]. Thai voiceover says: \"[Thai Script]\""
+         (หากไม่มีบทพูด ให้ตัดส่วน Thai voiceover says ออก)
+    5. **Negative Prompt**: รายการสิ่งที่ไม่ต้องการ (Negative aspects)
+
+    Output ต้องเป็น JSON เท่านั้น:
+    {
+      "title": "...",
+      "overall_description": "...",
+      "visual_consistency": "...",
+      "scenes": [
+        {
+          "scene_number": 1,
+          "time_range": "...",
+          "description": "...",
+          "voiceover": "...",
+          "image_prompt": "...",
+          "video_prompt": "..."
+        },
+        ...
+      ],
+      "negative_prompt": "..."
+    }
+  `;
+
+  return callWithRetry(async () => {
+    const response = await ai.models.generateContent({
+      model,
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            title: { type: Type.STRING },
+            overall_description: { type: Type.STRING },
+            scenes: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  scene_number: { type: Type.INTEGER },
+                  time_range: { type: Type.STRING },
+                  description: { type: Type.STRING },
+                  image_prompt: { type: Type.STRING },
+                  video_prompt: { type: Type.STRING }
+                },
+                required: ["scene_number", "time_range", "description", "image_prompt", "video_prompt"]
+              }
+            },
+            negative_prompt: { type: Type.STRING }
+          },
+          required: ["title", "overall_description", "scenes", "negative_prompt"]
+        }
+      }
+    });
+
+    if (response.text) {
+      return JSON.parse(response.text) as CinematicData;
     }
     throw new Error("No response text generated");
   });

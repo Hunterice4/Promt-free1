@@ -14,75 +14,75 @@ export interface ViralScript {
 }
 
 export enum VisualStyle {
-  ThreeD = "3D Animation",
-  Realistic = "Realistic",
-  Anime = "Anime",
-  Cinematic = "Cinematic",
-  PixelArt = "Pixel Art",
-  Cyberpunk = "Cyberpunk",
-  Watercolor = "Watercolor",
-  ComicBook = "Comic Book",
-  Claymation = "Claymation",
-  Retro80s = "Retro 80s",
-  Gothic = "Gothic",
-  Minimalist = "Minimalist",
-  StudioPortrait = "Studio Portrait",
-  OilPainting = "Oil Painting",
-  Sketch = "Pencil Sketch",
-  NeonLight = "Neon Light",
-  Vaporwave = "Vaporwave",
-  Steampunk = "Steampunk"
+  ThreeD = "แอนิเมชัน 3 มิติ (3D Animation)",
+  Realistic = "สมจริง (Realistic)",
+  Anime = "อนิเมะ (Anime)",
+  Cinematic = "ภาพยนตร์ (Cinematic)",
+  PixelArt = "พิกเซลอาร์ต (Pixel Art)",
+  Cyberpunk = "ไซเบอร์พังค์ (Cyberpunk)",
+  Watercolor = "สีน้ำ (Watercolor)",
+  ComicBook = "หนังสือการ์ตูน (Comic Book)",
+  Claymation = "ดินปั้น (Claymation)",
+  Retro80s = "เรโทรยุค 80 (Retro 80s)",
+  Gothic = "กอธิค (Gothic)",
+  Minimalist = "มินิมอล (Minimalist)",
+  StudioPortrait = "ภาพถ่ายสตูดิโอ (Studio Portrait)",
+  OilPainting = "ภาพวาดสีน้ำมัน (Oil Painting)",
+  Sketch = "ภาพสเก็ตช์ดินสอ (Pencil Sketch)",
+  NeonLight = "แสงนีออน (Neon Light)",
+  Vaporwave = "เวเปอร์เวฟ (Vaporwave)",
+  Steampunk = "สตีมพังค์ (Steampunk)"
 }
 
 export enum CharacterEmotion {
-  Angry = "โมโห",
-  Sarcastic = "จิกกัด",
-  Vulgar = "ดุดัน (บ่นตรงๆ)",
-  Cute = "น่ารัก",
-  Professional = "มืออาชีพ",
-  Depressed = "ซึมเศร้า/สิ้นหวัง",
-  Psychotic = "โรคจิต/หลอน",
-  Painful = "เจ็บปวด/ทรมาน"
+  Angry = "โมโห (Angry)",
+  Sarcastic = "จิกกัด (Sarcastic)",
+  Vulgar = "ดุดัน/บ่นตรงๆ (Vulgar)",
+  Cute = "น่ารัก (Cute)",
+  Professional = "มืออาชีพ (Professional)",
+  Depressed = "ซึมเศร้า/สิ้นหวัง (Depressed)",
+  Psychotic = "โรคจิต/หลอน (Psychotic)",
+  Painful = "เจ็บปวด/ทรมาน (Painful)"
 }
 
 export enum VoiceGender {
   Auto = "ไม่ระบุ (Auto)",
-  Male = "ผู้ชาย",
-  Female = "ผู้หญิง"
+  Male = "ผู้ชาย (Male)",
+  Female = "ผู้หญิง (Female)"
 }
 
 export enum VoiceTone {
   Auto = "ไม่ระบุ (Auto)",
-  Energetic = "ร่าเริง/พลังเยอะ",
-  Calm = "นุ่มนวล/ฟังสบาย",
-  Serious = "จริงจัง/น่าเชื่อถือ",
-  Playful = "ขี้เล่น/กวนๆ",
-  Storytelling = "นักเล่าเรื่อง/น่าติดตาม"
+  Energetic = "ร่าเริง/พลังเยอะ (Energetic)",
+  Calm = "นุ่มนวล/ฟังสบาย (Calm)",
+  Serious = "จริงจัง/น่าเชื่อถือ (Serious)",
+  Playful = "ขี้เล่น/กวนๆ (Playful)",
+  Storytelling = "นักเล่าเรื่อง/น่าติดตาม (Storytelling)"
 }
 
 export enum ScriptTemplate {
-  Roast = "Roast Master (กวนประสาท/จิกกัด)",
-  Savage = "Savage (ดุดัน/บ่นตรงๆ)",
-  EpicReview = "Epic Review (อวยยศ/เวอร์วัง)",
-  SadStory = "Drama (เศร้า/เรียกน้ำตา)",
-  Horror = "Horror (หลอน/สยองขวัญ)",
-  Educational = "Fake Facts (สาระแบบกาวๆ)",
-  Conspiracy = "Conspiracy (ทฤษฎีสมคบคิด)",
-  Philosophical = "Philosophical (ปรัชญาจ๋าๆ)"
+  Roast = "กวนประสาท/จิกกัด (Roast Master)",
+  Savage = "ดุดัน/บ่นตรงๆ (Savage)",
+  EpicReview = "อวยยศ/เวอร์วัง (Epic Review)",
+  SadStory = "เศร้า/เรียกน้ำตา (Drama)",
+  Horror = "หลอน/สยองขวัญ (Horror)",
+  Educational = "สาระแบบกาวๆ (Fake Facts)",
+  Conspiracy = "ทฤษฎีสมคบคิด (Conspiracy)",
+  Philosophical = "ปรัชญาจ๋าๆ (Philosophical)"
 }
 
 export enum ScriptFramework {
-  Auto = "Auto (AI กำหนด)",
-  PAS = "PAS: ปัญหา - กระตุ้น → แก้ไข",
-  AIDA = "AIDA: ดึงดูด → สนใจ → อยาก → ทำ",
-  BAB = "BAB: ก่อน - หลัง - ตัวเชื่อม",
-  HSP = "HSP: Hook - เล่าเรื่อง - Payoff",
-  HPL = "HPL: Hook - Payoff → วนลูป",
-  HRT = "HRT: Hook - บ่น → สอนสั้น",
-  CPV = "CPV: ชี้ปัญหา - สัญญา → ขอคะแนน",
-  HTE = "HTE: Hook - สอน » ทิ้งอารมณ์",
-  SMR = "SMR: ทำลาย Myth + เฉลยจริง",
-  SBS = "SBS: Hook - ขั้นตอน (Step-by-Step)"
+  Auto = "AI กำหนด (Auto)",
+  PAS = "ปัญหา - กระตุ้น → แก้ไข (PAS)",
+  AIDA = "ดึงดูด → สนใจ → อยาก → ทำ (AIDA)",
+  BAB = "ก่อน - หลัง - ตัวเชื่อม (BAB)",
+  HSP = "Hook - เล่าเรื่อง - Payoff (HSP)",
+  HPL = "Hook - Payoff → วนลูป (HPL)",
+  HRT = "Hook - บ่น → สอนสั้น (HRT)",
+  CPV = "ชี้ปัญหา - สัญญา → ขอคะแนน (CPV)",
+  HTE = "Hook - สอน » ทิ้งอารมณ์ (HTE)",
+  SMR = "ทำลาย Myth + เฉลยจริง (SMR)",
+  SBS = "Hook - ขั้นตอน (SBS: Step-by-Step)"
 }
 
 export interface GenerateParams {
@@ -193,4 +193,35 @@ export interface TourParams {
   enableVoiceover?: boolean;
   voiceGender?: VoiceGender;
   voiceTone?: VoiceTone;
+}
+
+export interface CinematicScene {
+  scene_number: number;
+  time_range: string;
+  description: string;
+  image_prompt: string;
+  video_prompt: string;
+  voiceover?: string;
+  image_url?: string;
+  video_url?: string;
+}
+
+export interface CinematicData {
+  title: string;
+  overall_description: string;
+  visual_consistency?: string; // Detailed description of main subject/environment for consistency
+  scenes: CinematicScene[];
+  negative_prompt: string;
+}
+
+export interface CinematicParams {
+  concept: string;
+  style: VisualStyle;
+  duration: number;
+  sceneCount: number;
+}
+
+export interface FigureData {
+  url: string;
+  prompt: string;
 }

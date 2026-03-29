@@ -2,6 +2,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { analyzeMediaToPromptDetailed, analyzeUrlToPromptDetailed } from '../services/geminiService';
 import { DetailedPromptResult } from '../types';
+import { saveHistoryItem } from '../services/historyService';
 import { 
   PhotoIcon, 
   VideoCameraIcon, 
@@ -92,6 +93,7 @@ export const PromptGenMode: React.FC = () => {
       
       if (detailedResult) {
         setResult(detailedResult);
+        await saveHistoryItem('Prompt Generator', detailedResult.title, detailedResult);
       }
     } catch (error: any) {
       console.error(error);
@@ -125,9 +127,9 @@ export const PromptGenMode: React.FC = () => {
   ];
 
   return (
-    <div className="flex flex-col lg:flex-row w-full lg:h-full bg-background">
+    <div className="flex flex-col lg:flex-row w-full h-full overflow-hidden bg-background">
       {/* Sidebar Input */}
-      <div className="w-full lg:w-[400px] p-6 space-y-8 flex flex-col lg:h-full lg:overflow-y-auto bg-[#0a0a14] border-r border-border shrink-0">
+      <div className="w-full lg:w-1/2 p-6 space-y-8 flex flex-col h-1/2 lg:h-full overflow-y-auto bg-[#0a0a14] border-r border-border shrink-0 custom-scrollbar">
         <div>
           <h1 className="text-3xl font-black text-white mb-2 tracking-tight">
             Prompt <span className="text-[#0066ff]">Generator</span>
@@ -279,7 +281,7 @@ export const PromptGenMode: React.FC = () => {
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 bg-[#05050a] lg:h-full lg:overflow-y-auto p-8">
+      <div className="w-full lg:w-1/2 bg-[#05050a] h-1/2 lg:h-full overflow-y-auto p-8 custom-scrollbar">
         {!result ? (
           <div className="h-full flex flex-col items-center justify-center text-center space-y-6 opacity-50">
             <SparklesIcon className="w-24 h-24 text-gray-800" />

@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { generateMovieSetPrompt, generateImage } from '../services/geminiService';
 import { SparklesIcon, TrashIcon, PhotoIcon, VideoCameraIcon, UserIcon, UsersIcon, ArrowDownTrayIcon } from '@heroicons/react/24/solid';
 import { downloadImage } from '../services/downloadService';
+import { saveHistoryItem } from '../services/historyService';
 
 export const MovieSetMode: React.FC = () => {
   const [char1, setChar1] = useState('Harry Potter');
@@ -59,10 +60,17 @@ export const MovieSetMode: React.FC = () => {
       setImagePrompt(parsed.image_prompt);
       setVideoPrompt(parsed.video_prompt);
       
+      let imageUrl = null;
       if (autoGenerateImage) {
-        const imageUrl = await generateImage(parsed.image_prompt);
+        imageUrl = await generateImage(parsed.image_prompt);
         setImageResult(imageUrl);
       }
+      
+      await saveHistoryItem('Abandoned Movie', concept, { 
+        imagePrompt: parsed.image_prompt, 
+        videoPrompt: parsed.video_prompt, 
+        imageUrl 
+      });
     } catch (error: any) {
       console.error(error);
       alert("เกิดข้อผิดพลาด: " + error.message);

@@ -5,6 +5,7 @@ import { SparklesIcon, UserIcon, ClockIcon, TrashIcon, ArrowDownTrayIcon } from 
 import { ClipboardDocumentIcon } from '@heroicons/react/24/outline';
 import { downloadImage } from '../services/downloadService';
 import { Tooltip } from './Tooltip';
+import { saveHistoryItem } from '../services/historyService';
 
 export const CharacterMode: React.FC = () => {
   const [concept, setConcept] = useState('');
@@ -42,6 +43,7 @@ export const CharacterMode: React.FC = () => {
     const newHistory = [data, ...history.filter(h => h.name !== data.name)].slice(0, 20);
     setHistory(newHistory);
     localStorage.setItem('character_history', JSON.stringify(newHistory));
+    saveHistoryItem('Character Mode', concept, data);
   };
 
   const clearHistory = () => {
@@ -129,9 +131,9 @@ export const CharacterMode: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col lg:flex-row w-full h-full">
+    <div className="flex flex-col lg:flex-row w-full h-full overflow-hidden bg-background">
       {/* Input Section */}
-      <div className="w-full lg:w-1/3 p-6 space-y-6 bg-[#0a0a14] border-r border-border overflow-y-auto custom-scrollbar">
+      <div className="w-full lg:w-1/2 p-6 space-y-6 bg-[#0a0a14] border-r border-border h-1/2 lg:h-full overflow-y-auto custom-scrollbar shrink-0">
         <div>
           <div className="flex items-center justify-between mb-2">
             <h1 className="text-3xl font-black text-white">Character <span className="text-[#0066ff]">Creator</span></h1>
@@ -388,7 +390,7 @@ export const CharacterMode: React.FC = () => {
       </div>
 
       {/* Output Section */}
-      <div className="w-full lg:w-2/3 p-6 lg:p-12 bg-background overflow-y-auto custom-scrollbar flex flex-col items-center">
+      <div className="w-full lg:w-1/2 p-6 lg:p-12 bg-background h-1/2 lg:h-full overflow-y-auto custom-scrollbar flex flex-col items-center">
         {loading && !result && (
           <div className="flex flex-col items-center justify-center h-full space-y-6">
             <div className="w-16 h-16 border-4 border-[#0066ff]/30 border-t-[#0066ff] rounded-full animate-spin"></div>

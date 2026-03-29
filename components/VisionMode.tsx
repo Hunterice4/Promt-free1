@@ -17,6 +17,7 @@ import {
   KeyIcon
 } from '@heroicons/react/24/solid';
 import { downloadImage } from '../services/downloadService';
+import { saveHistoryItem } from '../services/historyService';
 
 const ANALYSIS_MODES = [
   { id: 'Standard', name: 'มาตรฐาน', icon: SparklesIcon },
@@ -99,6 +100,7 @@ export const VisionMode: React.FC = () => {
     try {
       const prompt = await analyzeMediaToPrompt(media, mimeType, analysisMode);
       setResult(prompt);
+      await saveHistoryItem('Vision Mode (Analyze)', analysisMode, { prompt, originalMedia: media.substring(0, 100) + '...' });
     } catch (error: any) {
       console.error(error);
       alert("เกิดข้อผิดพลาดในการวิเคราะห์: " + error.message);
@@ -113,6 +115,7 @@ export const VisionMode: React.FC = () => {
     try {
       const imageUrl = await generateImage(result);
       setGenResult({ type: 'image', url: imageUrl });
+      await saveHistoryItem('Vision Mode (Gen Image)', result, { type: 'image', url: imageUrl });
     } catch (error: any) {
       alert("สร้างรูปภาพไม่สำเร็จ: " + error.message);
     } finally {
@@ -126,6 +129,7 @@ export const VisionMode: React.FC = () => {
     try {
       const videoUrl = await generateVideo(result, media);
       setGenResult({ type: 'video', url: videoUrl });
+      await saveHistoryItem('Vision Mode (Gen Video)', result, { type: 'video', url: videoUrl });
     } catch (error: any) {
       if (error.message?.includes("PERMISSION_DENIED")) {
         const aistudio = (window as any).aistudio;
@@ -163,12 +167,12 @@ export const VisionMode: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col lg:flex-row w-full lg:h-full bg-background">
+    <div className="flex flex-col lg:flex-row w-full h-full overflow-hidden bg-background">
       {/* Sidebar Input */}
-      <div className="w-full lg:w-[400px] p-6 space-y-8 flex flex-col lg:h-full lg:overflow-y-auto bg-[#0a0a14] border-r border-border shrink-0">
+      <div className="w-full lg:w-1/2 p-6 space-y-8 flex flex-col h-1/2 lg:h-full overflow-y-auto bg-[#0a0a14] border-r border-border shrink-0 custom-scrollbar">
         <div>
           <h1 className="text-3xl font-black text-white mb-2 tracking-tight">
-            Media <span className="text-[#0066ff]">Vision Pro</span>
+            วิเคราะห์ <span className="text-[#0066ff]">สื่ออัจฉริยะ</span>
           </h1>
           <p className="text-gray-400 text-sm font-medium">
             วิเคราะห์ แกะ Prompt และเจนต่อให้ครบจบในที่เดียว
@@ -284,7 +288,7 @@ export const VisionMode: React.FC = () => {
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 bg-[#05050a] lg:h-full lg:overflow-y-auto p-8 space-y-8">
+      <div className="w-full lg:w-1/2 bg-[#05050a] h-1/2 lg:h-full overflow-y-auto p-8 space-y-8 custom-scrollbar">
         {!result ? (
           <div className="h-full flex flex-col items-center justify-center text-center space-y-6 opacity-50">
             <SparklesIcon className="w-24 h-24 text-gray-800" />
@@ -295,7 +299,7 @@ export const VisionMode: React.FC = () => {
             {/* Prompt Result */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-black text-white uppercase tracking-tight">Prompt <span className="text-[#0066ff]">Result</span></h2>
+                <h2 className="text-2xl font-black text-white uppercase tracking-tight">ผลลัพธ์ <span className="text-[#0066ff]">พ้อมต์</span></h2>
                 <div className="flex gap-2">
                   <button 
                     onClick={handleCopy}
@@ -328,7 +332,7 @@ export const VisionMode: React.FC = () => {
                   <PhotoIcon className="w-8 h-8 text-gray-500 group-hover:text-[#0066ff]" />
                 )}
                 <div className="text-left">
-                  <h4 className="font-bold text-white">Generate Image</h4>
+                  <h4 className="font-bold text-white">สร้างรูปภาพ</h4>
                   <p className="text-xs text-gray-500">สร้างรูปภาพใหม่จาก Prompt นี้</p>
                 </div>
               </button>

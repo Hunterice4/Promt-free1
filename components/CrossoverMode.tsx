@@ -1,14 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { VisualStyle, VoiceGender, VoiceTone } from '../types';
 import { generateCrossoverDetailed, generateCrossoverImage, CrossoverData } from '../services/geminiService';
 import { SparklesIcon, PhotoIcon, UserGroupIcon, MapPinIcon, CheckCircleIcon, ArrowDownTrayIcon, ClipboardIcon, VideoCameraIcon } from '@heroicons/react/24/solid';
 import { toast, Toaster } from 'sonner';
 import { motion, AnimatePresence } from 'motion/react';
 import { downloadImage } from '../services/downloadService';
+import { saveHistoryItem } from '../services/historyService';
 
 interface CrossoverSlot {
   charImage: string | null;
   charDesc: string;
+  charPersonality?: string;
   location: string;
   action: string;
   atmosphere: string;
@@ -25,14 +27,15 @@ export const CrossoverMode: React.FC = () => {
   const [activeSlotIndex, setActiveSlotIndex] = useState(0);
   
   const [slots, setSlots] = useState<CrossoverSlot[]>([
-    { charImage: null, charDesc: '', location: '', action: 'ยืนโพสท่าถ่ายรูปคู่กัน', atmosphere: 'โรแมนติก', timeOfDay: 'พระอาทิตย์ตก' },
-    { charImage: null, charDesc: '', location: '', action: 'ยืนโพสท่าถ่ายรูปคู่กัน', atmosphere: 'โรแมนติก', timeOfDay: 'พระอาทิตย์ตก' },
-    { charImage: null, charDesc: '', location: '', action: 'ยืนโพสท่าถ่ายรูปคู่กัน', atmosphere: 'โรแมนติก', timeOfDay: 'พระอาทิตย์ตก' },
-    { charImage: null, charDesc: '', location: '', action: 'ยืนโพสท่าถ่ายรูปคู่กัน', atmosphere: 'โรแมนติก', timeOfDay: 'พระอาทิตย์ตก' },
+    { charImage: null, charDesc: '', charPersonality: '', location: '', action: 'ยืนโพสท่าถ่ายรูปคู่กัน', atmosphere: 'โรแมนติก', timeOfDay: 'พระอาทิตย์ตก' },
+    { charImage: null, charDesc: '', charPersonality: '', location: '', action: 'ยืนโพสท่าถ่ายรูปคู่กัน', atmosphere: 'โรแมนติก', timeOfDay: 'พระอาทิตย์ตก' },
+    { charImage: null, charDesc: '', charPersonality: '', location: '', action: 'ยืนโพสท่าถ่ายรูปคู่กัน', atmosphere: 'โรแมนติก', timeOfDay: 'พระอาทิตย์ตก' },
+    { charImage: null, charDesc: '', charPersonality: '', location: '', action: 'ยืนโพสท่าถ่ายรูปคู่กัน', atmosphere: 'โรแมนติก', timeOfDay: 'พระอาทิตย์ตก' },
   ]);
 
   const [style, setStyle] = useState<VisualStyle>(VisualStyle.Cinematic);
   const [enableVoiceover, setEnableVoiceover] = useState(true);
+  const [isVlogJourney, setIsVlogJourney] = useState(false);
   const [voiceGender, setVoiceGender] = useState<VoiceGender>(VoiceGender.Auto);
   const [voiceTone, setVoiceTone] = useState<VoiceTone>(VoiceTone.Auto);
   const [loading, setLoading] = useState(false);
@@ -40,6 +43,26 @@ export const CrossoverMode: React.FC = () => {
   const [resultImages, setResultImages] = useState<string[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
   const [showVideoGen, setShowVideoGen] = useState(false);
+  const [hasPaidKey, setHasPaidKey] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const checkKey = async () => {
+      const aistudio = (window as any).aistudio;
+      if (aistudio?.hasSelectedApiKey) {
+        const hasKey = await aistudio.hasSelectedApiKey();
+        setHasPaidKey(hasKey);
+      }
+    };
+    checkKey();
+  }, []);
+
+  const handleOpenKeySelector = async () => {
+    const aistudio = (window as any).aistudio;
+    if (aistudio?.openSelectKey) {
+      await aistudio.openSelectKey();
+      setHasPaidKey(true);
+    }
+  };
 
   const atmospheres = ['โรแมนติก', 'กดดัน/ตึงเครียด', 'สดใส/ร่าเริง', 'ลึกลับ', 'อบอุ่น', 'เศร้า/เหงา', 'ดุดัน/ทรงพลัง'];
   const times = ['เที่ยงวัน (แดดจัด)', 'เช้าตรู่ (หมอกลง)', 'พระอาทิตย์ตก (Golden Hour)', 'กลางคืน (มืดสนิท)', 'กลางคืน (แสงนีออน)', 'ฝนตกหนัก', 'หิมะตก'];
@@ -48,41 +71,57 @@ export const CrossoverMode: React.FC = () => {
     {
       title: '📸 แฟนมีต & ชิลล์ (Fanmeet & Chill)',
       items: [
-        { name: 'เซลฟี่คู่กัน', action: 'กำลังเซลฟี่ด้วยกันอย่างสนิทสนม ยิ้มแย้ม', location: 'คาเฟ่สไตล์มินิมอล แสงแดดอ่อนๆ' },
-        { name: 'เดินช้อปปิ้ง', action: 'เดินเล่นช้อปปิ้งด้วยกัน ถือแก้วกาแฟ', location: 'ถนนคนเดินย่านชินจูกุ ญี่ปุ่น' },
-        { name: 'ขอลายเซ็น', action: 'กำลังขอลายเซ็นด้วยความตื่นเต้น', location: 'งานอีเวนต์แฟนมีตติ้ง แสงไฟสว่าง' },
+        { name: 'เซลฟี่คู่กัน (Couple Selfie)', action: 'กำลังเซลฟี่ด้วยกันอย่างสนิทสนม ยิ้มแย้ม', location: 'คาเฟ่สไตล์มินิมอล แสงแดดอ่อนๆ' },
+        { name: 'เดินช้อปปิ้ง (Shopping Walk)', action: 'เดินเล่นช้อปปิ้งด้วยกัน ถือแก้วกาแฟ', location: 'ถนนคนเดินย่านชินจูกุ ญี่ปุ่น' },
+        { name: 'ขอลายเซ็น (Autograph Session)', action: 'กำลังขอลายเซ็นด้วยความตื่นเต้น', location: 'งานอีเวนต์แฟนมีตติ้ง แสงไฟสว่าง' },
       ]
     },
     {
       title: '⚔️ แอคชั่น & ต่อสู้ (Action & Battle)',
       items: [
-        { name: 'หันหลังชนกัน', action: 'ยืนหันหลังชนกัน เตรียมพร้อมต่อสู้ ถืออาวุธ', location: 'ซากปรักหักพังของเมืองที่ถูกทำลาย' },
-        { name: 'ปล่อยพลังคู่', action: 'กำลังปล่อยพลังเวทย์มนตร์โจมตีศัตรูพร้อมกัน', location: 'สนามรบมิติควอนตัม' },
-        { name: 'ขี่มอเตอร์ไซค์', action: 'ซ้อนท้ายมอเตอร์ไซค์หนีการตามล่าด้วยความเร็วสูง', location: 'เมืองไซเบอร์พังค์ยามค่ำคืน' },
+        { name: 'หันหลังชนกัน (Back to Back)', action: 'ยืนหันหลังชนกัน เตรียมพร้อมต่อสู้ ถืออาวุธ', location: 'ซากปรักหักพังของเมืองที่ถูกทำลาย' },
+        { name: 'ปล่อยพลังคู่ (Double Power)', action: 'กำลังปล่อยพลังเวทย์มนตร์โจมตีศัตรูพร้อมกัน', location: 'สนามรบมิติควอนตัม' },
+        { name: 'ขี่มอเตอร์ไซค์ (Motorbike Chase)', action: 'ซ้อนท้ายมอเตอร์ไซค์หนีการตามล่าด้วยความเร็วสูง', location: 'เมืองไซเบอร์พังค์ยามค่ำคืน' },
       ]
     },
     {
       title: '✨ แฟนตาซี (Fantasy World)',
       items: [
-        { name: 'ขี่มังกร', action: 'นั่งอยู่บนหลังมังกรที่กำลังบินทะยานขึ้นฟ้า', location: 'เหนือหมู่เมฆและปราสาทลอยฟ้า' },
-        { name: 'ผิงไฟในป่า', action: 'นั่งผิงไฟพูดคุยกันอย่างอบอุ่น', location: 'ป่าเอลฟ์ที่มีหิ่งห้อยเรืองแสง' },
-        { name: 'งานเต้นรำ', action: 'จับมือเต้นรำกันอย่างสง่างาม', location: 'ห้องโถงปราสาทราชวังสุดหรูหรา' },
+        { name: 'ขี่มังกร (Dragon Riding)', action: 'นั่งอยู่บนหลังมังกรที่กำลังบินทะยานขึ้นฟ้า', location: 'เหนือหมู่เมฆและปราสาทลอยฟ้า' },
+        { name: 'ผิงไฟในป่า (Forest Campfire)', action: 'นั่งผิงไฟพูดคุยกันอย่างอบอุ่น', location: 'ป่าเอลฟ์ที่มีหิ่งห้อยเรืองแสง' },
+        { name: 'งานเต้นรำ (Ballroom Dance)', action: 'จับมือเต้นรำกันอย่างสง่างาม', location: 'ห้องโถงปราสาทราชวังสุดหรูหรา' },
       ]
     },
     {
       title: '🏫 ชีวิตวัยเรียน (School Life)',
       items: [
-        { name: 'โต๊ะเรียนติดกัน', action: 'นั่งเรียนโต๊ะติดกันริมหน้าต่าง แอบมองกัน', location: 'ห้องเรียนมัธยมปลายญี่ปุ่นยามเย็น' },
-        { name: 'กินข้าวบนดาดฟ้า', action: 'นั่งกินข้าวกล่องเบนโตะด้วยกัน', location: 'ดาดฟ้าโรงเรียน ท้องฟ้าสดใส' },
-        { name: 'กางร่มกลับบ้าน', action: 'เดินกางร่มคันเดียวกันกลับบ้าน', location: 'ถนนทางเดินที่มีซากุระร่วงหล่นกลางสายฝน' },
+        { name: 'โต๊ะเรียนติดกัน (Side by Side Desks)', action: 'นั่งเรียนโต๊ะติดกันริมหน้าต่าง แอบมองกัน', location: 'ห้องเรียนมัธยมปลายญี่ปุ่นยามเย็น' },
+        { name: 'กินข้าวบนดาดฟ้า (Rooftop Lunch)', action: 'นั่งกินข้าวกล่องเบนโตะด้วยกัน', location: 'ดาดฟ้าโรงเรียน ท้องฟ้าสดใส' },
+        { name: 'กางร่มกลับบ้าน (Rainy Walk Home)', action: 'เดินกางร่มคันเดียวกันกลับบ้าน', location: 'ถนนทางเดินที่มีซากุระร่วงหล่นกลางสายฝน' },
+      ]
+    },
+    {
+      title: '🎬 ลำดับฉาก (Story Sequence)',
+      items: [
+        { name: 'ฉาก 1: ถ่ายรูปกับคนแรก (Scene 1: Photo with First Person)', action: 'กำลังยืนโพสท่าถ่ายรูปคู่กับตัวละครแรกอย่างสนุกสนาน', location: 'ลานกว้างหน้าหอไอเฟล ปารีส' },
+        { name: 'ฉาก 2: เดินไปหาคนที่สอง (Scene 2: Walk to Second Person)', action: 'เดินถือกล้อง Vlog เดินเข้าไปทักทายและขอถ่ายเซลฟี่กับตัวละครที่สอง', location: 'ย่านถนนคนเดินที่มีผู้คนพลุกพล่าน' },
+        { name: 'ฉาก 3: ถ่ายรูปหมู่ (Scene 3: Group Photo)', action: 'ชวนทั้งสองคนมาถ่ายรูปรวมกัน 3 คน บรรยากาศอบอุ่น', location: 'สวนสาธารณะยามเย็น' },
+      ]
+    },
+    {
+      title: '🤳 Vlog Journey (เดินถ่ายรูป)',
+      items: [
+        { name: 'เดินไปเซลฟี่คนที่ 1 (Walk to Selfie 1)', action: 'ถือไม้เซลฟี่เดินแพนกล้องไปทางขวาอย่างช้าๆ จนเจอตัวละครที่ 1 แล้วขยับเข้าไปยืนข้างๆ เพื่อถ่ายรูปคู่กันแบบสมจริง', location: 'ย่านท่องเที่ยวสุดฮิต' },
+        { name: 'เดินไปเซลฟี่คนที่ 2 (Walk to Selfie 2)', action: 'เดินต่อจากจุดเดิม แพนกล้องสำรวจบรรยากาศรอบๆ ก่อนจะแพนไปเจอตัวละครที่ 2 แล้วเดินเข้าไปทักทายถ่ายเซลฟี่', location: 'สวนสาธารณะใจกลางเมือง' },
+        { name: 'เดินไปเซลฟี่คนที่ 3 (Walk to Selfie 3)', action: 'เดินถือกล้อง Vlog แพนกล้องไปทางขวาเพื่อตามหาตัวละครที่ 3 เมื่อเจอแล้วให้เดินเข้าไปร่วมเฟรมถ่ายรูปกันอย่างเป็นธรรมชาติ', location: 'ริมแม่น้ำยามค่ำคืน' },
       ]
     },
     {
       title: '👻 สยองขวัญ (Horror & Survival)',
       items: [
-        { name: 'ซ่อนตัวในตู้', action: 'แอบซ่อนตัวอยู่ในตู้แคบๆ ด้วยความหวาดกลัว เอามือปิดปาก', location: 'บ้านร้างสุดหลอน' },
-        { name: 'สำรวจบ้านร้าง', action: 'เดินถือไฟฉายสำรวจความมืดด้วยความระแวง', location: 'โรงพยาบาลร้างบรรยากาศน่าขนลุก' },
-        { name: 'หนีซอมบี้', action: 'วิ่งหนีฝูงซอมบี้สุดชีวิต', location: 'เมืองร้างหลังวันสิ้นโลก' },
+        { name: 'ซ่อนตัวในตู้ (Hiding in Closet)', action: 'แอบซ่อนตัวอยู่ในตู้แคบๆ ด้วยความหวาดกลัว เอามือปิดปาก', location: 'บ้านร้างสุดหลอน' },
+        { name: 'สำรวจบ้านร้าง (Exploring Haunted House)', action: 'เดินถือไฟฉายสำรวจความมืดด้วยความระแวง', location: 'โรงพยาบาลร้างบรรยากาศน่าขนลุก' },
+        { name: 'หนีซอมบี้ (Zombie Escape)', action: 'วิ่งหนีฝูงซอมบี้สุดชีวิต', location: 'เมืองร้างหลังวันสิ้นโลก' },
       ]
     }
   ];
@@ -142,6 +181,7 @@ export const CrossoverMode: React.FC = () => {
         const crossoverData = await generateCrossoverDetailed({
           userDesc,
           charDesc: slot.charDesc,
+          charPersonality: slot.charPersonality,
           location: slot.location,
           action: slot.action,
           atmosphere: slot.atmosphere,
@@ -151,7 +191,10 @@ export const CrossoverMode: React.FC = () => {
           charImage: slot.charImage || undefined,
           enableVoiceover,
           voiceGender,
-          voiceTone
+          voiceTone,
+          sequenceIndex: i,
+          totalScenes: imageCount,
+          isVlogJourney
         });
 
         // Store prompts in slot
@@ -170,8 +213,17 @@ export const CrossoverMode: React.FC = () => {
       
       setLoadingProgress(100);
       toast.success(`สร้างภาพ Crossover สำเร็จ ${imageCount} รูป!`);
+      
+      await saveHistoryItem('Crossover', `${userDesc || 'User'} & ${slots[0].charDesc || 'Character'}`, {
+        images: newImages,
+        slots: updatedSlots.slice(0, imageCount),
+        style
+      });
     } catch (error: any) {
       console.error('Error generating crossover image:', error);
+      if (error.message?.includes("PERMISSION_DENIED") || error.message?.includes("entity was not found")) {
+        handleOpenKeySelector();
+      }
       toast.error(error.message || 'เกิดข้อผิดพลาดในการสร้างภาพ');
     } finally {
       setLoading(false);
@@ -180,7 +232,6 @@ export const CrossoverMode: React.FC = () => {
 
   return (
     <div className="flex flex-col lg:flex-row gap-6 h-full">
-      <Toaster position="top-center" richColors />
       
       {/* Left Panel - Controls */}
       <div className="w-full lg:w-1/3 flex flex-col gap-4 overflow-y-auto pr-2 custom-scrollbar">
@@ -194,6 +245,25 @@ export const CrossoverMode: React.FC = () => {
           </p>
 
           <div className="space-y-6">
+            {/* Vlog Journey Mode Toggle */}
+            <div className="p-4 bg-gradient-to-r from-[#0066ff]/20 to-purple-600/20 rounded-xl border border-[#0066ff]/40 shadow-lg">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-[#0066ff] rounded-lg">
+                    <VideoCameraIcon className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-white">Vlog Journey Mode</h3>
+                    <p className="text-[10px] text-gray-400">สร้างวิดีโอแบบเดินไปถ่ายรูปกับแต่ละคนต่อเนื่องกัน</p>
+                  </div>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input type="checkbox" className="sr-only peer" checked={isVlogJourney} onChange={(e) => setIsVlogJourney(e.target.checked)} />
+                  <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#0066ff]"></div>
+                </label>
+              </div>
+            </div>
+
             {/* Image Count & Slot Selection */}
             <div className="flex flex-col gap-3">
               <div className="flex items-center justify-between">
@@ -291,6 +361,17 @@ export const CrossoverMode: React.FC = () => {
                   value={currentSlot.charDesc}
                   onChange={(e) => updateSlot(activeSlotIndex, { charDesc: e.target.value })}
                   placeholder="เช่น Iron Man, Gojo Satoru, ผู้หญิงผมบลอนด์"
+                  className="w-full p-2.5 bg-card border border-border rounded-xl text-white text-sm focus:outline-none focus:border-[#0066ff] transition-colors"
+                />
+              </div>
+
+              <div className="mb-3">
+                <label className="block text-xs font-medium text-gray-400 mb-1">นิสัย / สไตล์ตัวละคร (Personality)</label>
+                <input
+                  type="text"
+                  value={currentSlot.charPersonality}
+                  onChange={(e) => updateSlot(activeSlotIndex, { charPersonality: e.target.value })}
+                  placeholder="เช่น สุขุม นิ่งเงียบ, ร่าเริง ขี้เล่น, ดุดัน"
                   className="w-full p-2.5 bg-card border border-border rounded-xl text-white text-sm focus:outline-none focus:border-[#0066ff] transition-colors"
                 />
               </div>
@@ -564,13 +645,26 @@ export const CrossoverMode: React.FC = () => {
                     Prompts สำหรับนำไปใช้งานต่อ
                   </h4>
                   {imageCount > 1 && (
-                    <button 
-                      onClick={() => setShowVideoGen(!showVideoGen)}
-                      className="text-xs font-bold text-[#0066ff] hover:underline flex items-center gap-1"
-                    >
-                      <VideoCameraIcon className="w-3 h-3" />
-                      {showVideoGen ? 'ซ่อนโหมดวิดีโอ' : 'โหมดทำวิดีโอต่อเนื่อง'}
-                    </button>
+                    <div className="flex gap-2">
+                      <button 
+                        onClick={() => setShowVideoGen(!showVideoGen)}
+                        className="text-xs font-bold text-[#0066ff] hover:underline flex items-center gap-1"
+                      >
+                        <VideoCameraIcon className="w-3 h-3" />
+                        {showVideoGen ? 'ซ่อนโหมดวิดีโอ' : 'โหมดทำวิดีโอต่อเนื่อง'}
+                      </button>
+                      <button 
+                        onClick={() => {
+                          const allPrompts = slots.slice(0, imageCount).map((s, i) => `--- รูปที่ ${i+1} ---\nImage: ${s.imagePrompt}\nVideo: ${s.videoPrompt}`).join('\n\n');
+                          navigator.clipboard.writeText(allPrompts);
+                          toast.success('คัดลอกพ้อมต์ทั้งหมดแล้ว');
+                        }}
+                        className="text-xs font-bold text-green-500 hover:underline flex items-center gap-1"
+                      >
+                        <ClipboardIcon className="w-3 h-3" />
+                        คัดลอกทั้งหมด
+                      </button>
+                    </div>
                   )}
                 </div>
 

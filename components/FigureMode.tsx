@@ -1,32 +1,67 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { generateFigureImage } from '../services/geminiService';
-import { PhotoIcon, SparklesIcon, TrashIcon, ArrowDownTrayIcon, PuzzlePieceIcon, ClockIcon } from '@heroicons/react/24/solid';
+import { FigureData } from '../types';
+import { PhotoIcon, SparklesIcon, TrashIcon, ArrowDownTrayIcon, PuzzlePieceIcon, ClockIcon, DocumentTextIcon, VideoCameraIcon, ClipboardDocumentIcon } from '@heroicons/react/24/solid';
+import { toast } from 'sonner';
 import { downloadImage } from '../services/downloadService';
+import { saveHistoryItem } from '../services/historyService';
 
 export const FigureMode: React.FC = () => {
   const [media, setMedia] = useState<string | null>(null);
+  const [name, setName] = useState('');
+  const [style, setStyle] = useState<'Figure' | 'Trompe' | 'Animal'>('Figure');
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<string | null>(null);
-  const [history, setHistory] = useState<string[]>([]);
+  const [result, setResult] = useState<FigureData | null>(null);
+  const [history, setHistory] = useState<FigureData[]>([]);
   const [showHistory, setShowHistory] = useState(false);
+  const [hasPaidKey, setHasPaidKey] = useState<boolean | null>(null);
+  const [genVideoLoading, setGenVideoLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const checkKey = async () => {
+      const aistudio = (window as any).aistudio;
+      if (aistudio?.hasSelectedApiKey) {
+        const hasKey = await aistudio.hasSelectedApiKey();
+        setHasPaidKey(hasKey);
+      }
+    };
+    checkKey();
+  }, []);
+
+  const handleOpenKeySelector = async () => {
+    const aistudio = (window as any).aistudio;
+    if (aistudio?.openSelectKey) {
+      await aistudio.openSelectKey();
+      setHasPaidKey(true);
+    }
+  };
 
   useEffect(() => {
     const savedHistory = localStorage.getItem('figure_history');
     if (savedHistory) {
       try {
-        setHistory(JSON.parse(savedHistory));
+        const parsed = JSON.parse(savedHistory);
+        // Handle old history format (strings) and convert to FigureData objects
+        const validatedHistory = Array.isArray(parsed) ? parsed.map((item: any) => {
+          if (typeof item === 'string') {
+            return { url: item, prompt: 'ไม่มีข้อมูล Prompt สำหรับประวัติเก่า' };
+          }
+          return item;
+        }) : [];
+        setHistory(validatedHistory);
       } catch (e) {
         console.error('Failed to parse figure history', e);
       }
     }
   }, []);
 
-  const saveToHistory = (url: string) => {
-    const newHistory = [url, ...history.filter(h => h !== url)].slice(0, 20);
+  const saveToHistory = (data: FigureData) => {
+    const newHistory = [data, ...history.filter(h => h.url !== data.url)].slice(0, 20);
     setHistory(newHistory);
     localStorage.setItem('figure_history', JSON.stringify(newHistory));
+    saveHistoryItem('Figure Mode', 'Figure Image', { url: data.url, prompt: data.prompt });
   };
 
   const clearHistory = () => {
@@ -49,14 +84,20 @@ export const FigureMode: React.FC = () => {
   };
 
   const handleGenerate = async () => {
-    if (!media) return;
+    if (style === 'Figure' && !media && !name) {
+      alert("กรุณาอัปโหลดรูปภาพหรือระบุชื่อตัวละครสำหรับสไตล์ฟิกเกอร์");
+      return;
+    }
     setLoading(true);
     try {
-      const imageUrl = await generateFigureImage(media);
-      setResult(imageUrl);
-      saveToHistory(imageUrl);
+      const figureData = await generateFigureImage(media || undefined, name, style);
+      setResult(figureData);
+      saveToHistory(figureData);
     } catch (error: any) {
       console.error(error);
+      if (error.message?.includes("PERMISSION_DENIED") || error.message?.includes("entity was not found")) {
+        handleOpenKeySelector();
+      }
       alert("เกิดข้อผิดพลาดในการสร้างฟิกเกอร์: " + error.message);
     } finally {
       setLoading(false);
@@ -69,20 +110,39 @@ export const FigureMode: React.FC = () => {
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  const handleDownload = () => {
-    if (result) {
-      downloadImage(result, 'generated-figure.png');
+  const handleDownload = (url?: string) => {
+    const targetUrl = url || result?.url;
+    if (targetUrl) {
+      downloadImage(targetUrl, 'generated-figure.png');
+    }
+  };
+
+  const handleGenerateVideo = async () => {
+    if (!result) return;
+    setGenVideoLoading(true);
+    try {
+      const { generateVideo } = await import('../services/geminiService');
+      const videoUrl = await generateVideo(result.prompt, result.url);
+      window.open(videoUrl, '_blank');
+    } catch (error: any) {
+      if (error.message?.includes("PERMISSION_DENIED") || error.message?.includes("entity was not found")) {
+        handleOpenKeySelector();
+      } else {
+        alert("สร้างวิดีโอไม่สำเร็จ: " + error.message);
+      }
+    } finally {
+      setGenVideoLoading(null as any);
     }
   };
 
   return (
-    <div className="flex flex-col lg:flex-row w-full lg:h-full bg-background">
+    <div className="flex flex-col lg:flex-row w-full h-full overflow-hidden bg-background">
       {/* Input Section */}
-      <div className="w-full lg:w-1/3 p-6 space-y-8 flex flex-col lg:h-full lg:overflow-y-auto bg-[#0a0a14] border-r border-border">
+      <div className="w-full lg:w-1/2 p-6 space-y-8 flex flex-col h-1/2 lg:h-full overflow-y-auto bg-[#0a0a14] border-r border-border shrink-0 custom-scrollbar">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-black text-white mb-2 tracking-tight">
-              Figure <span className="text-[#0066ff]">Gen</span>
+              สร้าง <span className="text-[#0066ff]">ฟิกเกอร์</span>
             </h1>
             <p className="text-gray-400 text-sm font-medium">
               เปลี่ยนรูปภาพตัวละครให้เป็นฟิกเกอร์สุดพรีเมียม
@@ -115,21 +175,52 @@ export const FigureMode: React.FC = () => {
                 <p className="text-gray-500 text-sm">ยังไม่มีประวัติการสร้าง</p>
               </div>
             ) : (
-              <div className="grid grid-cols-2 gap-3">
-                {history.map((url, i) => (
-                  <button 
+              <div className="space-y-4">
+                {history.map((item, i) => (
+                  <div 
                     key={i}
-                    onClick={() => {
-                      setResult(url);
-                      setShowHistory(false);
-                    }}
-                    className="aspect-square rounded-xl overflow-hidden border border-border hover:border-[#0066ff] transition-all group relative"
+                    className="bg-card border border-border rounded-2xl overflow-hidden flex flex-col group"
                   >
-                    <img src={url} className="w-full h-full object-cover" alt="History" />
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                      <SparklesIcon className="w-6 h-6 text-white" />
+                    <div className="relative aspect-video w-full overflow-hidden">
+                      <img src={item.url} className="w-full h-full object-cover" alt="History" />
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                        <button 
+                          onClick={() => {
+                            setResult(item);
+                            setShowHistory(false);
+                          }}
+                          className="p-2 bg-[#0066ff] text-white rounded-lg hover:scale-110 transition-transform"
+                          title="ดูรูปภาพ"
+                        >
+                          <SparklesIcon className="w-5 h-5" />
+                        </button>
+                        <button 
+                          onClick={() => handleDownload(item.url)}
+                          className="p-2 bg-green-600 text-white rounded-lg hover:scale-110 transition-transform"
+                          title="ดาวน์โหลด"
+                        >
+                          <ArrowDownTrayIcon className="w-5 h-5" />
+                        </button>
+                      </div>
                     </div>
-                  </button>
+                    <div className="p-4 space-y-2">
+                      <div className="flex items-start gap-2">
+                        <DocumentTextIcon className="w-4 h-4 text-[#0066ff] mt-1 shrink-0" />
+                        <p className="text-[10px] text-gray-400 line-clamp-3 leading-relaxed italic">
+                          {item.prompt}
+                        </p>
+                      </div>
+                      <button 
+                        onClick={() => {
+                          navigator.clipboard.writeText(item.prompt);
+                          alert("คัดลอก Prompt แล้ว!");
+                        }}
+                        className="text-[9px] text-[#0066ff] hover:underline font-bold"
+                      >
+                        คัดลอก Prompt ทั้งหมด
+                      </button>
+                    </div>
+                  </div>
                 ))}
               </div>
             )}
@@ -143,12 +234,64 @@ export const FigureMode: React.FC = () => {
           </div>
         ) : (
           <div className="space-y-6">
-            <div className="space-y-2">
-            <label className="text-xs font-black text-gray-500 uppercase tracking-[0.2em]">
-              📸 อัปโหลดรูปตัวละคร (Character Image)
-            </label>
-            
-            {!media ? (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-xs font-black text-gray-500 uppercase tracking-[0.2em]">
+                  👤 ชื่อตัวละคร
+                </label>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="เช่น มิกุ, นารูโตะ, หรือชื่อคุณเอง"
+                  className="w-full bg-card border border-border rounded-xl px-4 py-3 text-white placeholder:text-gray-600 focus:border-[#0066ff] focus:ring-1 focus:ring-[#0066ff] outline-none transition-all"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-black text-gray-500 uppercase tracking-[0.2em]">
+                  🎨 เลือกสไตล์
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  <button
+                    onClick={() => setStyle('Figure')}
+                    className={`py-3 rounded-xl font-bold text-[10px] transition-all border ${
+                      style === 'Figure'
+                        ? 'bg-[#0066ff] border-[#0066ff] text-white'
+                        : 'bg-card border-border text-gray-500 hover:border-gray-700'
+                    }`}
+                  >
+                    ฟิกเกอร์ 1/7
+                  </button>
+                  <button
+                    onClick={() => setStyle('Trompe')}
+                    className={`py-3 rounded-xl font-bold text-[10px] transition-all border ${
+                      style === 'Trompe'
+                        ? 'bg-[#0066ff] border-[#0066ff] text-white'
+                        : 'bg-card border-border text-gray-500 hover:border-gray-700'
+                    }`}
+                  >
+                    ภาพลวงตา 3 มิติ
+                  </button>
+                  <button
+                    onClick={() => setStyle('Animal')}
+                    className={`py-3 rounded-xl font-bold text-[10px] transition-all border ${
+                      style === 'Animal'
+                        ? 'bg-[#0066ff] border-[#0066ff] text-white'
+                        : 'bg-card border-border text-gray-500 hover:border-gray-700'
+                    }`}
+                  >
+                    ภาพถ่ายสัตว์
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-black text-gray-500 uppercase tracking-[0.2em]">
+                  📸 อัปโหลดรูปตัวละคร
+                </label>
+                
+                {!media ? (
               <div 
                 onClick={() => fileInputRef.current?.click()}
                 className="w-full aspect-square bg-card border-2 border-dashed border-border rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:border-[#0066ff]/50 hover:bg-[#0066ff]/5 transition-all group"
@@ -187,9 +330,9 @@ export const FigureMode: React.FC = () => {
           </div>
           <button
             onClick={handleGenerate}
-            disabled={loading || !media}
+            disabled={loading || (style === 'Figure' && !media && !name)}
             className={`w-full py-4 rounded-xl font-black text-lg flex items-center justify-center gap-3 transition-all shadow-xl ${
-              loading || !media
+              loading || (style === 'Figure' && !media && !name)
                 ? 'bg-gray-800 text-gray-600 cursor-not-allowed'
                 : 'bg-[#0066ff] text-white hover:bg-[#0055dd] active:scale-95'
             }`}
@@ -205,16 +348,17 @@ export const FigureMode: React.FC = () => {
             ) : (
               <>
                 <SparklesIcon className="w-6 h-6" />
-                <span>สร้างฟิกเกอร์ 1/7 Scale</span>
+                <span>สร้าง {style === 'Animal' ? 'ภาพถ่ายสัตว์' : style === 'Trompe' ? 'ภาพลวงตา 3 มิติ' : 'ฟิกเกอร์ 1/7'}</span>
               </>
             )}
           </button>
         </div>
-        )}
       </div>
+    )}
+  </div>
 
       {/* Output Section */}
-      <div className="w-full lg:w-2/3 bg-[#05050a] border-l border-border lg:h-full lg:overflow-y-auto p-8">
+      <div className="w-full lg:w-1/2 bg-[#05050a] border-l border-border h-1/2 lg:h-full overflow-y-auto p-8 custom-scrollbar">
         {!result ? (
           <div className="h-full flex flex-col items-center justify-center text-center space-y-6">
             <div className="w-32 h-32 bg-card rounded-3xl flex items-center justify-center border-2 border-dashed border-border transform -rotate-3">
@@ -227,28 +371,62 @@ export const FigureMode: React.FC = () => {
           </div>
         ) : (
           <div className="space-y-8 animate-fade-in flex flex-col items-center">
-            <div className="w-full flex items-center justify-between">
-              <h2 className="text-3xl font-black text-white uppercase tracking-tight">
-                Generated <span className="text-[#0066ff]">Figure</span>
-              </h2>
-              <button 
-                onClick={handleDownload}
-                className="flex items-center gap-2 px-6 py-3 rounded-xl font-bold bg-[#0066ff]/10 text-[#0066ff] hover:bg-[#0066ff] hover:text-white transition-all"
-              >
-                <ArrowDownTrayIcon className="w-5 h-5" />
-                ดาวน์โหลดรูปภาพ
-              </button>
-            </div>
+              <div className="w-full flex items-center justify-between">
+                <h2 className="text-3xl font-black text-white uppercase tracking-tight">
+                  ฟิกเกอร์ที่ <span className="text-[#0066ff]">สร้างแล้ว</span>
+                </h2>
+                <div className="flex gap-2">
+                  <button 
+                    onClick={handleGenerateVideo}
+                    disabled={!!genVideoLoading}
+                    className="flex items-center gap-2 px-6 py-3 rounded-xl font-bold bg-purple-500/10 text-purple-500 hover:bg-purple-500 hover:text-white transition-all disabled:opacity-50"
+                  >
+                    {genVideoLoading ? (
+                      <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                    ) : <VideoCameraIcon className="w-5 h-5" />}
+                    {genVideoLoading ? 'กำลังสร้างวิดีโอ...' : 'สร้างวิดีโอ (Veo)'}
+                  </button>
+                  <button 
+                    onClick={() => handleDownload()}
+                    className="flex items-center gap-2 px-6 py-3 rounded-xl font-bold bg-[#0066ff]/10 text-[#0066ff] hover:bg-[#0066ff] hover:text-white transition-all"
+                  >
+                    <ArrowDownTrayIcon className="w-5 h-5" />
+                    ดาวน์โหลดรูปภาพ
+                  </button>
+                </div>
+              </div>
 
             <div className="w-full max-w-2xl bg-card border border-border rounded-3xl overflow-hidden shadow-2xl relative group">
-              <img src={result} className="w-full h-full object-cover" alt="Generated Figure" referrerPolicy="no-referrer" />
+              <img src={result.url} className="w-full h-full object-cover" alt="Generated Figure" referrerPolicy="no-referrer" />
               <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
                 <SparklesIcon className="w-32 h-32 text-[#0066ff]" />
               </div>
             </div>
 
-            <div className="bg-[#0066ff]/5 border border-[#0066ff]/20 rounded-2xl p-6 text-center w-full max-w-2xl">
-              <p className="text-sm text-gray-400">
+            <div className="bg-[#0066ff]/5 border border-[#0066ff]/20 rounded-2xl p-6 w-full max-w-2xl space-y-3">
+              <div className="flex items-center justify-between gap-2 text-[#0066ff]">
+                <div className="flex items-center gap-2">
+                  <DocumentTextIcon className="w-5 h-5" />
+                  <span className="font-bold text-sm">AI Prompt Used:</span>
+                </div>
+                <button 
+                  onClick={() => {
+                    navigator.clipboard.writeText(result.prompt);
+                    toast.success('คัดลอก Prompt สำเร็จ!');
+                  }}
+                  className="flex items-center gap-1 px-3 py-1 rounded-lg bg-[#0066ff]/10 hover:bg-[#0066ff] hover:text-white transition-all text-[10px] font-bold"
+                >
+                  <ClipboardDocumentIcon className="w-3 h-3" />
+                  คัดลอก Prompt
+                </button>
+              </div>
+              <p className="text-xs text-gray-400 leading-relaxed italic bg-black/20 p-4 rounded-xl border border-white/5">
+                {result.prompt}
+              </p>
+              <p className="text-[10px] text-gray-500 text-center pt-2">
                 <strong className="text-[#0066ff]">Note:</strong> รูปภาพนี้ถูกสร้างขึ้นด้วย AI (Nano-Banana) ในสไตล์ Photorealistic พร้อมรายละเอียดระดับ 4K
               </p>
             </div>

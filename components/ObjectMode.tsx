@@ -5,6 +5,8 @@ import { generateViralScript, generateRandomObject, generateImage } from '../ser
 import { VisualStyle, ViralScript, CharacterEmotion, ScriptTemplate, ScriptFramework, VoiceGender, VoiceTone } from '../types';
 import { toast, Toaster } from 'sonner';
 
+import { saveHistoryItem } from '../services/historyService';
+
 export const ObjectMode: React.FC = () => {
   const [objectName, setObjectName] = useState('');
   const [additionalDetails, setAdditionalDetails] = useState('');
@@ -59,10 +61,13 @@ export const ObjectMode: React.FC = () => {
       
       setResult(scriptData);
       
+      let finalResult = { ...scriptData, scenes: [...scriptData.scenes] };
+
       if (skipImages) {
         setLoading(false);
         setLoadingStatus('');
         toast.success('สร้างสคริปต์สำเร็จ! (ข้ามการสร้างรูปภาพตามที่ตั้งค่าไว้)');
+        await saveHistoryItem('Object Mode', objectName, finalResult);
         return;
       }
 
@@ -78,12 +83,8 @@ export const ObjectMode: React.FC = () => {
           completedCount++;
           setLoadingStatus(`กำลังวาดภาพประกอบ (${completedCount}/${updatedScenes.length})...`);
           
-          setResult(prev => {
-            if (!prev) return prev;
-            const newScenes = [...prev.scenes];
-            newScenes[i] = { ...newScenes[i], image_url: imageUrl };
-            return { ...prev, scenes: newScenes };
-          });
+          finalResult.scenes[i] = { ...finalResult.scenes[i], image_url: imageUrl };
+          setResult({ ...finalResult });
           
           // Small delay between images to avoid rate limits
           if (i < updatedScenes.length - 1) {
@@ -117,6 +118,8 @@ export const ObjectMode: React.FC = () => {
           completedCount++;
         }
       }
+      
+      await saveHistoryItem('Object Mode', objectName, finalResult);
     } catch (error: any) {
       console.error("Failed to generate content", error);
       const errorMsg = error?.message || "";
@@ -147,7 +150,7 @@ export const ObjectMode: React.FC = () => {
   }, [objectName, additionalDetails, template, framework, includeHeadline, style, emotion, enableVoiceover, voiceGender, voiceTone, sceneCount, skipImages]);
 
   return (
-    <div className="flex flex-col lg:flex-row w-full lg:h-full">
+    <div className="flex flex-col lg:flex-row w-full h-full overflow-hidden bg-background">
       <Toaster position="top-center" richColors />
       <InputSection
         objectName={objectName}

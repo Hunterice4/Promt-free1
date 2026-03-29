@@ -27,7 +27,7 @@ export const OutputSection: React.FC<OutputSectionProps> = ({ data, loading, loa
 
   if (loading && !data) {
     return (
-      <div className="w-full lg:w-2/3 bg-[#07070e] p-8 flex flex-col items-center justify-center space-y-6 border-l border-border lg:h-full min-h-[500px]">
+      <div className="w-full lg:w-1/2 bg-[#07070e] p-8 flex flex-col items-center justify-center space-y-6 border-l border-border h-1/2 lg:h-full min-h-[300px] overflow-y-auto custom-scrollbar">
         <div className="relative">
           <div className="w-24 h-24 border-4 border-[#0066ff]/10 border-t-[#0066ff] rounded-full animate-spin"></div>
           <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-3xl animate-pulse">
@@ -35,7 +35,7 @@ export const OutputSection: React.FC<OutputSectionProps> = ({ data, loading, loa
           </div>
         </div>
         <div className="text-center space-y-2">
-          <h3 className="text-2xl font-black text-white uppercase tracking-widest">Generating...</h3>
+          <h3 className="text-2xl font-black text-white uppercase tracking-widest">กำลังสร้าง...</h3>
           <p className="text-gray-400 font-medium italic">"{loadingStatus || 'กำลังสร้างเนื้อหา...'}"</p>
         </div>
       </div>
@@ -44,7 +44,7 @@ export const OutputSection: React.FC<OutputSectionProps> = ({ data, loading, loa
 
   if (!data) {
     return (
-      <div className="w-full lg:w-2/3 bg-[#07070e] p-8 flex flex-col items-center justify-center text-center border-l border-border lg:h-full min-h-[500px]">
+      <div className="w-full lg:w-1/2 bg-[#07070e] p-8 flex flex-col items-center justify-center text-center border-l border-border h-1/2 lg:h-full min-h-[300px] overflow-y-auto custom-scrollbar">
         <div className="w-32 h-32 bg-card rounded-3xl flex items-center justify-center mb-6 border-2 border-dashed border-border transform rotate-3">
             <FireIcon className="w-16 h-16 text-gray-700" />
         </div>
@@ -72,7 +72,7 @@ export const OutputSection: React.FC<OutputSectionProps> = ({ data, loading, loa
   }
 
   return (
-    <div className="w-full lg:w-2/3 bg-[#05050a] border-l border-border lg:h-full lg:overflow-y-auto lg:custom-scrollbar">
+    <div className="w-full lg:w-1/2 bg-[#05050a] border-l border-border h-1/2 lg:h-full overflow-y-auto custom-scrollbar">
       <div className="p-8 space-y-10 flex flex-col min-h-full">
         
         {/* Header Section */}
@@ -89,9 +89,9 @@ export const OutputSection: React.FC<OutputSectionProps> = ({ data, loading, loa
                  title="Copy Title + Hashtags"
                >
                  {copiedId === 'header' ? (
-                   <><CheckIcon className="w-4 h-4 text-green-500" /> Copied!</>
+                   <><CheckIcon className="w-4 h-4 text-green-500" /> คัดลอกแล้ว!</>
                  ) : (
-                   <><ClipboardDocumentIcon className="w-4 h-4" /> Copy Header</>
+                   <><ClipboardDocumentIcon className="w-4 h-4" /> คัดลอกหัวเรื่อง</>
                  )}
                </button>
              </div>
@@ -171,7 +171,7 @@ export const OutputSection: React.FC<OutputSectionProps> = ({ data, loading, loa
                               onClick={() => downloadImage(scene.image_url!, `autodraw-scene-${scene.scene_number}.png`)}
                               className="text-white font-bold text-xs flex items-center gap-1 hover:text-[#00aaff] transition-colors"
                             >
-                              <ArrowDownTrayIcon className="w-4 h-4" /> Download Image
+                              <ArrowDownTrayIcon className="w-4 h-4" /> ดาวน์โหลดรูปภาพ
                             </button>
                           </div>
                         </>
@@ -191,7 +191,7 @@ export const OutputSection: React.FC<OutputSectionProps> = ({ data, loading, loa
                     
                     {/* Image Prompt */}
                     <PromptBox 
-                      label="Image Prompt"
+                      label="พ้อมต์รูปภาพ"
                       icon={<PhotoIcon className="w-5 h-5" />}
                       content={scene.image_prompt}
                       onCopy={() => handleCopy(scene.image_prompt, `img-${scene.scene_number}`)}
@@ -200,14 +200,14 @@ export const OutputSection: React.FC<OutputSectionProps> = ({ data, loading, loa
 
                     {/* Video Master Prompt */}
                     <PromptBox 
-                      label="The Master Prompt (Video AI)"
+                      label="พ้อมต์หลัก (สำหรับ Video AI)"
                       icon={<VideoCameraIcon className="w-5 h-5" />}
                       content={scene.video_prompt}
                       onCopy={() => handleCopy(scene.video_prompt, `vid-${scene.scene_number}`)}
                       isCopied={copiedId === `vid-${scene.scene_number}`}
                       isHighlight
                     />
-                 </div>
+                  </div>
                </div>
             </div>
           ))}

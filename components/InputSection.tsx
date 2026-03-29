@@ -35,13 +35,13 @@ interface InputSectionProps {
 
 const emotionOptions = [
   { type: CharacterEmotion.Angry, label: 'โมโห', icon: '😡' },
-  { type: CharacterEmotion.Sarcastic, label: 'ด่านิดๆ', icon: '😏' },
-  { type: CharacterEmotion.Vulgar, label: 'หยาบดิบ', icon: '🤬' },
+  { type: CharacterEmotion.Sarcastic, label: 'จิกกัด', icon: '😏' },
+  { type: CharacterEmotion.Vulgar, label: 'ดุดัน/บ่นตรงๆ', icon: '🤬' },
   { type: CharacterEmotion.Cute, label: 'น่ารัก', icon: '🥰' },
   { type: CharacterEmotion.Professional, label: 'มืออาชีพ', icon: '🧐' },
-  { type: CharacterEmotion.Depressed, label: 'ซึมเศร้า', icon: '😭' },
-  { type: CharacterEmotion.Psychotic, label: 'โรคจิต', icon: '🤪' },
-  { type: CharacterEmotion.Painful, label: 'เจ็บปวด', icon: '😫' },
+  { type: CharacterEmotion.Depressed, label: 'ซึมเศร้า/สิ้นหวัง', icon: '😭' },
+  { type: CharacterEmotion.Psychotic, label: 'โรคจิต/หลอน', icon: '🤪' },
+  { type: CharacterEmotion.Painful, label: 'เจ็บปวด/ทรมาน', icon: '😫' },
 ];
 
 export const InputSection: React.FC<InputSectionProps> = ({
@@ -82,10 +82,10 @@ export const InputSection: React.FC<InputSectionProps> = ({
   };
 
   return (
-    <div className="w-full lg:w-1/3 p-6 space-y-8 flex flex-col lg:h-full lg:overflow-y-auto bg-[#0a0a14] border-r border-border lg:custom-scrollbar">
+    <div className="w-full lg:w-1/2 p-6 space-y-8 flex flex-col h-1/2 lg:h-full overflow-y-auto bg-[#0a0a14] border-r border-border custom-scrollbar shrink-0">
       <div>
         <h1 className="text-3xl font-black text-white mb-2 tracking-tight">
-          Autodraw <span className="text-[#0066ff]">Pro</span>
+          วาดภาพ <span className="text-[#0066ff]">อัจฉริยะ</span>
         </h1>
         <p className="text-gray-400 text-sm font-medium">
           ปลุกเสกสิ่งของให้มีชีวิต พร้อมวาดภาพประกอบสุดโปร
@@ -124,7 +124,7 @@ export const InputSection: React.FC<InputSectionProps> = ({
         {/* Additional Details Input (Optional) */}
         <div className="space-y-2">
           <label className="text-xs font-black text-gray-500 uppercase tracking-[0.2em] flex items-center gap-2">
-            <PencilSquareIcon className="w-4 h-4" /> รายละเอียดเพิ่มเติม (Optional)
+            <PencilSquareIcon className="w-4 h-4" /> รายละเอียดเพิ่มเติม (ไม่บังคับ)
           </label>
           <input
             type="text"
@@ -138,7 +138,7 @@ export const InputSection: React.FC<InputSectionProps> = ({
         {/* Template Selection */}
         <div className="space-y-2">
           <label className="text-xs font-black text-gray-500 uppercase tracking-[0.2em] flex items-center gap-2">
-            <DocumentTextIcon className="w-4 h-4" /> รูปแบบเนื้อหา (Template)
+            <DocumentTextIcon className="w-4 h-4" /> รูปแบบเนื้อหา
           </label>
           <select
             value={template}
@@ -156,7 +156,7 @@ export const InputSection: React.FC<InputSectionProps> = ({
         {/* Framework Selection */}
         <div className="space-y-2">
           <label className="text-xs font-black text-gray-500 uppercase tracking-[0.2em] flex items-center gap-2">
-            <SparklesIcon className="w-4 h-4" /> โครงสร้างสคริปต์ (Framework)
+            <SparklesIcon className="w-4 h-4" /> โครงสร้างสคริปต์
           </label>
           <select
             value={framework}
@@ -174,7 +174,7 @@ export const InputSection: React.FC<InputSectionProps> = ({
         {/* Headline Toggle */}
         <div className="flex items-center justify-between bg-card p-4 rounded-xl border border-border">
           <div className="space-y-1">
-            <label className="text-xs font-black text-white uppercase tracking-wider">พาดหัวเรื่อง (Headline)</label>
+            <label className="text-xs font-black text-white uppercase tracking-wider">พาดหัวเรื่อง</label>
             <p className="text-[10px] text-gray-500">ใส่พาดหัวในรูปแรกของวิดีโอ</p>
           </div>
           <button
@@ -194,7 +194,7 @@ export const InputSection: React.FC<InputSectionProps> = ({
         {/* Skip Images Toggle */}
         <div className="flex items-center justify-between bg-card p-4 rounded-xl border border-border">
           <div className="space-y-1">
-            <label className="text-xs font-black text-white uppercase tracking-wider">ไม่สร้างรูปภาพ (Skip Images)</label>
+            <label className="text-xs font-black text-white uppercase tracking-wider">ไม่สร้างรูปภาพ</label>
             <p className="text-[10px] text-gray-500">สร้างเฉพาะสคริปต์ (ประหยัดโควตา)</p>
           </div>
           <button
@@ -266,7 +266,7 @@ export const InputSection: React.FC<InputSectionProps> = ({
           {/* Character Emotion Selection */}
           <div className="space-y-3 pt-4 border-t border-border/50">
             <label className="text-[10px] font-bold text-gray-500 uppercase flex items-center gap-2">
-              <FaceSmileIcon className="w-3 h-3" /> อารมณ์ตัวละคร (Emotion)
+              <FaceSmileIcon className="w-3 h-3" /> อารมณ์ตัวละคร
             </label>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
               {emotionOptions.map((opt) => (
